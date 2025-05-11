@@ -8,6 +8,11 @@ export const API_ENDPOINTS = {
     logout: `${BASE_URL}/users/logout`,
     profile: `${BASE_URL}/users/profile`
   },
+  // Captcha endpoints
+  captcha: {
+    generate: `${BASE_URL}/users/generate`,
+    verify: `${BASE_URL}/captcha/verify`
+  },
   // User endpoints
   users: `${BASE_URL}/users`,
   // Category endpoints

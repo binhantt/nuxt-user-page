@@ -78,7 +78,7 @@
               <div class="has-text-centered mt-5">
                 <p>
                   Chưa có tài khoản?
-                  <NuxtLink to="/register" class="has-text-primary">Đăng ký ngay</NuxtLink>
+                  <NuxtLink to="/account/register" class="has-text-primary">Đăng ký ngay</NuxtLink>
                 </p>
               </div>
             </form>
@@ -100,6 +100,11 @@ const userStore = useUserStore()
 
 // Handle login form submission
 const handleLogin = async () => {
+  if (!email.value || !password.value) {
+    authStore.setError('Vui lòng nhập đầy đủ thông tin')
+    return
+  }
+
   try {
     isLoading.value = true
     console.log('[Login] Attempting login with:', { email: email.value })
@@ -117,8 +122,13 @@ const handleLogin = async () => {
         localStorage.setItem('user', JSON.stringify(profileData))
         console.log('[Login] User data stored in localStorage')
         
+        // Clear form
+        email.value = ''
+        password.value = ''
+        showPassword.value = false
+        
         // Navigate to home page
-         navigateTo('/')
+        navigateTo('/')
       } else {
         console.error('[Login] Failed to fetch profile data')
         throw new Error('Không thể tải thông tin người dùng')
@@ -135,7 +145,7 @@ const handleLogin = async () => {
   }
 }
 
-// Clear any existing errors when component mounts
+// Clear any existing errors when component mounts or unmounts
 onMounted(() => {
   console.log('[Login] Page mounted, clearing previous state')
   authStore.clearError()
@@ -145,6 +155,14 @@ onMounted(() => {
   if (!authStore.isLoggedIn) {
     localStorage.removeItem('user')
   }
+})
+
+onUnmounted(() => {
+  console.log('[Login] Page unmounted, clearing state')
+  authStore.clearError()
+  email.value = ''
+  password.value = ''
+  showPassword.value = false
 })
 </script>
 

@@ -93,7 +93,7 @@
 
           <div class="navbar-item">
             <div class="buttons" v-if="!authStore.isLoggedIn">
-              <NuxtLink to="/account" class="button is-warning">
+              <NuxtLink to="/account/login" class="button is-warning">
                 <strong>Đăng Nhập</strong>
               </NuxtLink>
             </div>
@@ -107,7 +107,7 @@
               <div class="navbar-dropdown is-right">
                 <NuxtLink 
                   v-if="storedUser?.name"
-                  :to="`/trang_ca_nhan/${storedUser.name}`" 
+                  :to="`/account/profile/${storedUser.name}`" 
                   class="navbar-item"
                 >
                   <span class="icon">
@@ -115,7 +115,7 @@
                   </span>
                   <span>Thông tin tài khoản</span>
                 </NuxtLink>
-                <NuxtLink to="/orders" class="navbar-item">
+                <NuxtLink to="/account/orders" class="navbar-item">
                   <span class="icon">
                     <i class="fas fa-shopping-bag"></i>
                   </span>
@@ -177,7 +177,7 @@ const handleLogout = async () => {
     localStorage.removeItem('user')
     storedUser.value = null
     console.log('[Navbar] Logout successful')
-    await navigateTo('/account')
+    await navigateTo('/account/login')
   } catch (error) {
     console.error('[Navbar] Logout error:', error)
   } finally {
