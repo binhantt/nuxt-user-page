@@ -4,8 +4,8 @@
       <div class="columns">
         <!-- Company Info -->
         <div class="column is-4">
-          <h3 class="title is-4 has-text-white">TEMPLATESHOP</h3>
-          <p class="has-text-grey-lighter mb-4">
+          <h3 class="title is-4 has-text-primary">TEMPLATESHOP</h3>
+          <p class="mb-4">
             Cung cấp giải pháp template chuyên nghiệp cho các sàn thương mại điện tử hàng đầu Việt Nam
           </p>
           <div class="social-icons">
@@ -26,7 +26,7 @@
 
         <!-- Quick Links -->
         <div class="column is-2">
-          <h4 class="title is-5 has-text-white">Liên Kết</h4>
+          <h4 class="title is-5 has-text-primary">Liên Kết</h4>
           <ul class="footer-links">
             <li><a href="#">Trang Chủ</a></li>
             <li><a href="#">Cửa Hàng</a></li>
@@ -37,7 +37,7 @@
 
         <!-- Templates -->
         <div class="column is-2">
-          <h4 class="title is-5 has-text-white">Templates</h4>
+          <h4 class="title is-5 has-text-primary">Templates</h4>
           <ul class="footer-links">
             <li><a href="#">Shopee</a></li>
             <li><a href="#">Tiki</a></li>
@@ -48,7 +48,7 @@
 
         <!-- Contact Info -->
         <div class="column is-4">
-          <h4 class="title is-5 has-text-white">Liên Hệ</h4>
+          <h4 class="title is-5 has-text-primary">Liên Hệ</h4>
           <ul class="contact-info">
             <li>
               <span class="icon">
@@ -76,7 +76,7 @@
 
       <!-- Copyright -->
       <div class="copyright has-text-centered">
-        <p class="has-text-grey-lighter">
+        <p>
           © {{ new Date().getFullYear() }} TEMPLATESHOP. Tất cả quyền được bảo lưu.
         </p>
       </div>
@@ -86,9 +86,10 @@
 
 <style scoped>
 .footer {
-  background: linear-gradient(135deg, #1a1c2c 0%, #2a3c54 100%);
+  background: white;
   padding: 4rem 1.5rem 2rem;
-  color: #ffffff;
+  color: #363636;
+  border-top: 1px solid #f5f5f5;
 }
 
 .social-icons {
@@ -96,13 +97,13 @@
 }
 
 .social-icons a {
-  color: #ffffff;
+  color: #3273dc;
   margin-right: 1rem;
   transition: color 0.3s ease;
 }
 
 .social-icons a:hover {
-  color: #3273dc;
+  color: #ffd700;
 }
 
 .footer-links {
@@ -115,12 +116,12 @@
 }
 
 .footer-links a {
-  color: #b5b5b5;
+  color: #363636;
   transition: color 0.3s ease;
 }
 
 .footer-links a:hover {
-  color: #ffffff;
+  color: #3273dc;
 }
 
 .contact-info {
@@ -132,7 +133,7 @@
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
-  color: #b5b5b5;
+  color: #363636;
 }
 
 .contact-info .icon {
@@ -142,11 +143,16 @@
 
 .divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #f5f5f5;
   margin: 2rem 0;
 }
 
 .copyright {
   font-size: 0.9rem;
+  color: #363636;
+}
+
+.has-text-primary {
+  color: #3273dc !important;
 }
 </style> 

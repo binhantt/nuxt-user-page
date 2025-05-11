@@ -14,7 +14,7 @@
                     alt="Avatar"
                   >
                 </figure>
-                <button v-if="isOwnProfile" class="button is-small is-primary" @click="uploadAvatar">
+                <button v-if="isOwnProfile" class="button is-small is-warning" @click="uploadAvatar">
                   <span class="icon">
                     <i class="fas fa-camera"></i>
                   </span>
@@ -94,7 +94,7 @@
                   <div class="field">
                     <div class="control">
                       <button
-                        class="button is-primary"
+                        class="button is-warning"
                         :class="{ 'is-loading': isUpdating }"
                         type="submit"
                       >
@@ -125,7 +125,7 @@
 
               <!-- Orders Tab -->
               <div v-if="activeTab === 'orders'" class="tab-content">
-                <div class="notification is-info">
+                <div class="notification is-warning">
                   Tính năng đang được phát triển
                 </div>
               </div>
@@ -173,7 +173,7 @@
                   <div class="field">
                     <div class="control">
                       <button
-                        class="button is-primary"
+                        class="button is-warning"
                         :class="{ 'is-loading': isUpdating }"
                         type="submit"
                       >
@@ -194,7 +194,7 @@
           </div>
 
           <!-- Not Found State -->
-          <div v-else class="notification is-danger">
+          <div v-else class="notification is-warning">
             Không tìm thấy người dùng
           </div>
         </div>
@@ -401,11 +401,13 @@ const uploadAvatar = () => {
 .profile-page {
   min-height: 100vh;
   padding: 5rem 1.5rem;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #f5f5f5;
 }
 
 .profile-box {
   padding: 2rem;
+  background: white;
+  box-shadow: 0 2px 10px rgba(50, 115, 220, 0.1);
 }
 
 .profile-header {
@@ -428,7 +430,7 @@ const uploadAvatar = () => {
 }
 
 .joined-date {
-  color: #666;
+  color: #3273dc;
   font-size: 0.9rem;
 }
 
@@ -437,7 +439,7 @@ const uploadAvatar = () => {
 }
 
 .order-card {
-  border: 1px solid #ddd;
+  border: 1px solid #f5f5f5;
   border-radius: 8px;
   margin-bottom: 1rem;
   overflow: hidden;
@@ -478,12 +480,13 @@ const uploadAvatar = () => {
 }
 
 .tag.is-success {
-  background-color: #48c774;
+  background-color: #3273dc;
   color: white;
 }
 
 .total {
   font-weight: bold;
+  color: #3273dc;
 }
 
 .user-info .info-item {
@@ -493,6 +496,20 @@ const uploadAvatar = () => {
 .user-info .info-item strong {
   display: inline-block;
   width: 120px;
-  color: #666;
+  color: #3273dc;
+}
+
+.button.is-warning {
+  background-color: #ffd700;
+  color: #363636;
+}
+
+.button.is-warning:hover {
+  background-color: #ffed4a;
+}
+
+.notification.is-warning {
+  background-color: #ffd700;
+  color: #363636;
 }
 </style> 

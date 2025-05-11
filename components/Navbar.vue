@@ -1,12 +1,12 @@
 <template>
-  <nav class="navbar is-fixed-top" style="background-color: rgb(127, 236, 255);">
+  <nav class="navbar is-fixed-top" style="background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
     <div class="container">
       <div class="navbar-brand">
-        <NuxtLink class="navbar-item" to="/">
+        <NuxtLink class="navbar-item has-text-primary" to="/">
           <span class="has-text-weight-bold is-size-4">TEMPLATESHOP</span>
         </NuxtLink>
 
-        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" @click="isMenuActive = !isMenuActive">
+        <a role="button" class="navbar-burger has-text-dark" aria-label="menu" aria-expanded="false" @click="isMenuActive = !isMenuActive">
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
@@ -15,20 +15,20 @@
 
       <div class="navbar-menu" :class="{ 'is-active': isMenuActive }">
         <div class="navbar-start">
-          <NuxtLink class="navbar-item" to="/">
+          <NuxtLink class="navbar-item has-text-dark" to="/">
             Trang Chủ
           </NuxtLink>
           
           <div class="navbar-item has-dropdown is-hoverable">
-            <a class="navbar-link">
+            <a class="navbar-link has-text-dark">
               Danh Mục
             </a>
             <div class="navbar-dropdown">
               <NuxtLink 
                 v-for="category in categories.data" 
                 :key="category.id"
-                :to="`/category/${category.id}`"
-                class="navbar-item"
+                :to="`/search/${category.name}`"
+                class="navbar-item has-text-dark"
               >
                 <figure class="image is-24x24 mr-2" v-if="category.image">
                   <img :src="category.image" :alt="category.name">
@@ -38,46 +38,51 @@
             </div>
           </div>
 
-          <NuxtLink class="navbar-item" to="/blog">
+          <NuxtLink class="navbar-item has-text-dark" to="/blog">
             Blog
           </NuxtLink>
 
-          <NuxtLink class="navbar-item" to="/guide">
+          <NuxtLink class="navbar-item has-text-dark" to="/guide">
             Hướng Dẫn
           </NuxtLink>
 
-          <NuxtLink class="navbar-item" to="/cart">
+          <NuxtLink class="navbar-item has-text-dark" to="/cart">
             Giỏ Hàng
           </NuxtLink>
 
-          <NuxtLink class="navbar-item" to="/payment">
+          <NuxtLink class="navbar-item has-text-dark" to="/payment">
             Thanh Toán
           </NuxtLink>
 
-          <NuxtLink class="navbar-item" to="/account">
+          <NuxtLink class="navbar-item has-text-dark" to="/account">
             Tài Khoản
           </NuxtLink>
         </div>
 
         <div class="navbar-end">
           <div class="navbar-item">
-            <div class="field has-addons">
+            <form @submit.prevent="handleSearch" class="field has-addons">
               <div class="control">
-                <input class="input" type="text" placeholder="Tìm kiếm...">
+                <input 
+                  v-model="searchQuery" 
+                  class="input" 
+                  type="text" 
+                  placeholder="Tìm kiếm..."
+                >
               </div>
               <div class="control">
-                <a class="button is-info">
+                <button type="submit" class="button is-warning">
                   <span class="icon">
                     <i class="fas fa-search"></i>
                   </span>
-                </a>
+                </button>
               </div>
-            </div>
+            </form>
           </div>
 
           <div class="navbar-item">
             <div class="buttons">
-              <a class="button">
+              <a class="button is-warning">
                 <span>0VNĐ</span>
                 <span class="icon">
                   <i class="fas fa-shopping-cart"></i>
@@ -88,10 +93,9 @@
 
           <div class="navbar-item">
             <div class="buttons" v-if="!authStore.isLoggedIn">
-              <NuxtLink to="/account" class="button is-primary">
+              <NuxtLink to="/account" class="button is-warning">
                 <strong>Đăng Nhập</strong>
               </NuxtLink>
-             
             </div>
             <div class="navbar-item has-dropdown is-hoverable" v-else>
               <a class="navbar-link">
@@ -125,7 +129,7 @@
                   <span>Số dư: {{ storedUser?.balance || '0' }}đ</span>
                 </div>
                 <hr class="navbar-divider">
-                <a class="navbar-item has-text-danger" @click="handleLogout" :class="{ 'is-loading': isLoading }">
+                <a class="navbar-item has-text-warning" @click="handleLogout" :class="{ 'is-loading': isLoading }">
                   <span class="icon">
                     <i class="fas fa-sign-out-alt"></i>
                   </span>
@@ -219,47 +223,101 @@ watch(
 
 <style scoped>
 .navbar {
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  border-bottom: 1px solid #f5f5f5;
 }
 
 .navbar-item {
   color: #363636;
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
 .navbar-item:hover {
-  color: #3273dc;
+  color: #3273dc !important;
+  background-color: transparent !important;
 }
 
 .navbar-dropdown {
   border-top: 2px solid #3273dc;
-}
-
-.navbar-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  background-color: white;
+  box-shadow: 0 8px 16px rgba(50, 115, 220, 0.1);
 }
 
 .navbar-dropdown .navbar-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  color: #363636;
 }
 
-.navbar-dropdown .icon {
-  width: 1.5rem;
+.navbar-link {
+  color: #363636 !important;
 }
 
-.has-text-danger {
-  color: #ff3860;
+.navbar-link:not(.is-arrowless)::after {
+  border-color: #363636 !important;
+}
+
+.navbar-burger span {
+  background-color: #363636;
+}
+
+.navbar-divider {
+  background-color: #f5f5f5;
 }
 
 .input {
   border-radius: 4px 0 0 4px;
+  border: 1px solid #f5f5f5;
+  background-color: white;
+  transition: all 0.3s ease;
 }
 
-.button.is-info {
-  border-radius: 0 4px 4px 0;
+.input:focus {
+  border-color: #3273dc;
+  box-shadow: 0 0 0 1px rgba(50, 115, 220, 0.2);
+}
+
+.button.is-warning {
+  background-color: #ffd700;
+  color: #363636;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.button.is-warning:hover {
+  background-color: #ffed4a;
+  transform: translateY(-1px);
+}
+
+.has-text-warning {
+  color: #ffd700 !important;
+}
+
+.has-text-primary {
+  color: #3273dc !important;
+}
+
+.navbar-dropdown .icon {
+  color: #3273dc;
+}
+
+@media screen and (max-width: 1023px) {
+  .navbar-menu {
+    background-color: white;
+    box-shadow: 0 8px 16px rgba(50, 115, 220, 0.1);
+  }
+  
+  .navbar-menu.is-active {
+    animation: slideDown 0.3s ease;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style> 

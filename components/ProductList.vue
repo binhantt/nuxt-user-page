@@ -23,7 +23,7 @@
       </div>
 
       <!-- Error State -->
-      <div v-else-if="productStore.getError" class="notification is-danger">
+      <div v-else-if="productStore.getError" class="notification is-warning">
         {{ productStore.getError }}
       </div>
 
@@ -36,7 +36,7 @@
             <div class="product-image">
               <img :src="product.main_image_url" :alt="product.name">
               <div class="product-overlay">
-                <NuxtLink :to="`/product/${product.id}`" class="button is-primary is-rounded">
+                <NuxtLink :to="`/product/${encodeURIComponent(product.name)}`" class="button is-warning is-rounded">
                   <span class="icon">
                     <i class="fas fa-eye"></i>
                   </span>
@@ -49,7 +49,7 @@
             </div>
             <div class="product-content">
               <h3 class="title is-5">
-                <NuxtLink :to="`/product/${product.id}`" class="has-text-dark">
+                <NuxtLink :to="`/product/${encodeURIComponent(product.name)}`" class="has-text-dark">
                   {{ product.name }}
                 </NuxtLink>
               </h3>
@@ -111,8 +111,10 @@ const activeCategory = ref('all')
 const currentPage = ref(1)
 
 const categories = computed(() => categoryStore.categories?.data || [])
-const products = computed(() => productStore.getProducts?.data || [])
-console.log(products.value)
+const products = computed(() => {
+  console.log('Store products:', productStore.getProducts)
+  return productStore.getProducts?.data || []
+})
 const pagination = computed(() => productStore.getProducts?.pagination || {
   currentPage: 1,
   totalPages: 1,
@@ -132,6 +134,7 @@ const formatPrice = (price) => {
 
 // Set category and fetch products
 const setCategory = async (categoryId) => {
+  console.log('Setting category:', categoryId)
   activeCategory.value = categoryId
   currentPage.value = 1
   await fetchProducts()
@@ -139,20 +142,24 @@ const setCategory = async (categoryId) => {
 
 // Change page
 const changePage = async (page) => {
+  console.log('Changing to page:', page)
   currentPage.value = page
   await fetchProducts()
 }
 
 // Fetch products with filters
 const fetchProducts = async () => {
+  console.log('Fetching products with category:', activeCategory.value)
   const filters = {
     ...(activeCategory.value !== 'all' && { category_id: activeCategory.value })
   }
-  await productStore.fetchProducts(currentPage.value, filters)
+  const result = await productStore.fetchProducts(currentPage.value, filters)
+  console.log('Fetch result:', result)
 }
 
 // Initialize component
 onMounted(async () => {
+  console.log('Component mounted, fetching initial data')
   await Promise.all([
     categoryStore.fetchCategories(),
     fetchProducts()
@@ -162,7 +169,7 @@ onMounted(async () => {
 
 <style scoped>
 .products-section {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #f5f5f5;
   padding: 6rem 1.5rem;
 }
 
@@ -170,7 +177,7 @@ onMounted(async () => {
   background: white;
   border-radius: 15px;
   overflow: hidden;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 20px rgba(50, 115, 220, 0.1);
   transition: transform 0.3s ease;
   height: 100%;
   display: flex;
@@ -179,6 +186,7 @@ onMounted(async () => {
 
 .product-card:hover {
   transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(50, 115, 220, 0.2);
 }
 
 .product-image {
@@ -207,7 +215,7 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(50, 115, 220, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +247,7 @@ onMounted(async () => {
 }
 
 .price-tag {
-  background: #4CAF50;
+  background: #3273dc;
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 20px;
@@ -252,19 +260,42 @@ onMounted(async () => {
   margin-top: 1rem;
 }
 
+.tag.is-success {
+  background-color: #3273dc;
+  color: white;
+}
+
+.tag.is-danger {
+  background-color: #ffd700;
+  color: #363636;
+}
+
+.tag.is-info {
+  background-color: #f5f5f5;
+  color: #363636;
+}
+
 .tabs li.is-active a {
   border-bottom-color: #3273dc;
   color: #3273dc;
 }
 
 .title.is-2 {
-  background: linear-gradient(45deg, #3273dc, #00d1b2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #3273dc;
 }
 
 .pagination-link.is-current {
   background-color: #3273dc;
   border-color: #3273dc;
+  color: white;
+}
+
+.button.is-warning {
+  background-color: #ffd700;
+  color: #363636;
+}
+
+.button.is-warning:hover {
+  background-color: #ffed4a;
 }
 </style> 
