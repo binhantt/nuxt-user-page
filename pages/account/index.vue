@@ -22,6 +22,7 @@
                     v-model="email"
                     placeholder="example@gmail.com"
                     required
+                    :disabled="isLoading"
                   >
                   <span class="icon is-small is-left">
                     <i class="fas fa-envelope"></i>
@@ -39,6 +40,7 @@
                     v-model="password"
                     placeholder="********"
                     required
+                    :disabled="isLoading"
                   >
                   <span class="icon is-small is-left">
                     <i class="fas fa-lock"></i>
@@ -49,7 +51,11 @@
               <!-- Show Password Checkbox -->
               <div class="field">
                 <label class="checkbox">
-                  <input type="checkbox" v-model="showPassword">
+                  <input 
+                    type="checkbox" 
+                    v-model="showPassword"
+                    :disabled="isLoading"
+                  >
                   Hiện mật khẩu
                 </label>
               </div>
@@ -59,8 +65,9 @@
                 <div class="control">
                   <button
                     class="button is-primary is-fullwidth"
-                    :class="{ 'is-loading': authStore.isLoading }"
+                    :class="{ 'is-loading': isLoading }"
                     type="submit"
+                    :disabled="isLoading"
                   >
                     Đăng Nhập
                   </button>
@@ -86,42 +93,58 @@
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const isLoading = ref(false)
 
 const authStore = useAuthStore()
 const userStore = useUserStore()
 
 // Handle login form submission
 const handleLogin = async () => {
-  console.log('Attempting login with:', { email: email.value, password: password.value })
-  
-  const success = await authStore.login(email.value, password.value)
-  console.log('Login result:', { success, token: authStore.getToken })
-  
-  if (success) {
-    console.log('Login successful, fetching profile...')
-    const profileData = await userStore.fetchProfile()
-    console.log('Profile fetched:', profileData)
+  try {
+    isLoading.value = true
+    console.log('[Login] Attempting login with:', { email: email.value })
+    
+    const success = await authStore.login(email.value, password.value)
+    console.log('[Login] Auth result:', { success, token: authStore.getToken })
+    
+    if (success) {
+      console.log('[Login] Auth successful, fetching profile...')
+      const profileData = await userStore.fetchProfile()
+      console.log('[Login] Profile fetched:', profileData)
 
-    if (profileData) {
-      // Store user data in localStorage
-      localStorage.setItem('user', JSON.stringify(profileData))
-      console.log('User data stored in localStorage')
-      
-      // Navigate to home page
-      navigateTo('/')
+      if (profileData) {
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(profileData))
+        console.log('[Login] User data stored in localStorage')
+        
+        // Navigate to home page
+        await navigateTo('/')
+      } else {
+        console.error('[Login] Failed to fetch profile data')
+        throw new Error('Không thể tải thông tin người dùng')
+      }
     } else {
-      console.error('Failed to fetch profile data')
+      console.error('[Login] Auth failed:', authStore.getError)
+      throw new Error(authStore.getError || 'Đăng nhập thất bại')
     }
-  } else {
-    console.error('Login failed:', authStore.getError)
+  } catch (error) {
+    console.error('[Login] Error:', error)
+    authStore.setError(error.message)
+  } finally {
+    isLoading.value = false
   }
 }
 
 // Clear any existing errors when component mounts
 onMounted(() => {
-  console.log('Login page mounted, clearing previous state')
+  console.log('[Login] Page mounted, clearing previous state')
   authStore.clearError()
   userStore.clearProfile()
+  
+  // Clear stored data if not logged in
+  if (!authStore.isLoggedIn) {
+    localStorage.removeItem('user')
+  }
 })
 </script>
 
@@ -137,22 +160,12 @@ onMounted(() => {
   padding: 2rem;
 }
 
-.captcha-container {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  align-items: center;
+.button.is-loading {
+  pointer-events: none;
+  color: transparent !important;
 }
 
-.captcha-image {
-  background: linear-gradient(45deg, #1a1c2c, #2a3c54);
-  color: white;
-  padding: 1rem 2rem;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 1.2rem;
-  letter-spacing: 0.5rem;
-  cursor: pointer;
-  user-select: none;
+.button.is-loading::after {
+  border-color: transparent transparent #fff #fff !important;
 }
 </style> 
