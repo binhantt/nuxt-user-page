@@ -97,29 +97,22 @@
             </div>
             <div class="navbar-item has-dropdown is-hoverable" v-else>
               <a class="navbar-link">
-                {{ authStore.getUserData?.fullName || 'Tài khoản' }}
+                <span class="icon">
+                  <i class="fas fa-user"></i>
+                </span>
+                <span>{{ storedUser?.name || 'Tài khoản' }}</span>
               </a>
               <div class="navbar-dropdown is-right">
                 <NuxtLink 
-                  v-if="authStore.getUserData?.name"
-                  :to="`/trang_ca_nhan/${authStore.getUserData.name}`" 
+                  v-if="storedUser?.name"
+                  :to="`/trang_ca_nhan/${storedUser.name}`" 
                   class="navbar-item"
                 >
                   <span class="icon">
-                    <i class="fas fa-user"></i>
+                    <i class="fas fa-user-circle"></i>
                   </span>
                   <span>Thông tin tài khoản</span>
                 </NuxtLink>
-                <a 
-                  v-else 
-                  class="navbar-item has-text-danger"
-                  @click="handleProfileError"
-                >
-                  <span class="icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                  </span>
-                  <span>Lỗi tải thông tin</span>
-                </a>
                 <NuxtLink to="/orders" class="navbar-item">
                   <span class="icon">
                     <i class="fas fa-shopping-bag"></i>
@@ -127,7 +120,14 @@
                   <span>Đơn hàng của tôi</span>
                 </NuxtLink>
                 <hr class="navbar-divider">
-                <a class="navbar-item" @click="handleLogout">
+                <div class="navbar-item">
+                  <span class="icon">
+                    <i class="fas fa-wallet"></i>
+                  </span>
+                  <span>Số dư: {{ storedUser?.balance || '0' }}đ</span>
+                </div>
+                <hr class="navbar-divider">
+                <a class="navbar-item has-text-danger" @click="handleLogout" :class="{ 'is-loading': isLoading }">
                   <span class="icon">
                     <i class="fas fa-sign-out-alt"></i>
                   </span>
@@ -147,38 +147,76 @@ const isMenuActive = ref(false)
 const categoryStore = useCategoryStore()
 const authStore = useAuthStore()
 const userStore = useUserStore()
+const isLoading = ref(false)
 
 const { categories } = storeToRefs(categoryStore)
 
-const handleProfileError = () => {
-  // Reload user profile data and update auth store
-  userStore.fetchProfile().then(profileData => {
-    if (profileData) {
-      authStore.setUserData(profileData)
+// Get stored user data
+const storedUser = ref(null)
+
+// Function to get user data from localStorage and parse it
+const initializeUserData = () => {
+  try {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      storedUser.value = JSON.parse(userData)
+      console.log('[Navbar] Stored user data:', storedUser.value)
     }
-  })
+  } catch (error) {
+    console.error('[Navbar] Error parsing stored user data:', error)
+  }
 }
 
 const handleLogout = async () => {
-  await authStore.logout()
-  userStore.clearProfile()
-  navigateTo('/')
+  try {
+    isLoading.value = true
+    await authStore.logout()
+    userStore.clearProfile()
+    localStorage.removeItem('user')
+    storedUser.value = null
+    console.log('[Navbar] Logout successful')
+    await navigateTo('/account')
+  } catch (error) {
+    console.error('[Navbar] Logout error:', error)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 onMounted(async () => {
-  categoryStore.fetchCategories()
-  // Initialize auth state
-  authStore.initializeAuth()
+  console.log('[Navbar] Component mounted')
+  await categoryStore.fetchCategories()
   
-  // If authenticated but no user data, fetch profile
-  if (authStore.isLoggedIn && !authStore.getUserData) {
-    console.log('Fetching profile data...')
-    const profileData = await userStore.fetchProfile()
-    if (profileData) {
-      authStore.setUserData(profileData)
+  // Initialize auth state and get user data
+  authStore.initializeAuth()
+  initializeUserData()
+  
+  // Log the current state
+  console.log('[Navbar] Auth state:', {
+    isLoggedIn: authStore.isLoggedIn,
+    storedUser: storedUser.value
+  })
+})
+
+// Watch for changes in localStorage and auth state
+watch(
+  [() => localStorage.getItem('user'), () => authStore.isLoggedIn],
+  ([newData, isLoggedIn]) => {
+    console.log('[Navbar] State change:', { newData: !!newData, isLoggedIn })
+    
+    if (newData && isLoggedIn) {
+      try {
+        storedUser.value = JSON.parse(newData)
+        console.log('[Navbar] User data updated:', storedUser.value)
+      } catch (error) {
+        console.error('[Navbar] Error parsing user data:', error)
+      }
+    } else {
+      storedUser.value = null
+      console.log('[Navbar] User data cleared')
     }
   }
-})
+)
 </script>
 
 <style scoped>
@@ -197,6 +235,26 @@ onMounted(async () => {
 
 .navbar-dropdown {
   border-top: 2px solid #3273dc;
+}
+
+.navbar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-dropdown .navbar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-dropdown .icon {
+  width: 1.5rem;
+}
+
+.has-text-danger {
+  color: #ff3860;
 }
 
 .input {

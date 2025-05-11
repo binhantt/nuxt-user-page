@@ -1,17 +1,33 @@
 import { defineStore } from 'pinia'
 import { API_ENDPOINTS } from '~/config/Api'
 
+interface UserData {
+  id: number
+  email: string
+  name: string
+  phone: string
+  address: string
+  balance: string
+  is_active: number
+  created_at: string
+  updated_at: string
+}
+
 interface AuthState {
   token: string | null
+  refreshToken: string | null
+  expiresIn: number | null
   isAuthenticated: boolean
   loading: boolean
   error: string | null
-  userData: any | null
+  userData: UserData | null
 }
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     token: null,
+    refreshToken: null,
+    expiresIn: null,
     isAuthenticated: false,
     loading: false,
     error: null,
@@ -47,23 +63,23 @@ export const useAuthStore = defineStore('auth', {
         const data = await response.json()
         console.log('[AuthStore] Login response:', data)
 
-        if (!response.ok) {
+        if (!response.ok || !data.success) {
           throw new Error(data.message || 'Đăng nhập thất bại')
         }
 
-        // Check if the token is in the correct location of the response
-        const token = data.data?.token || data.token
-        if (!token) {
-          console.error('[AuthStore] No token received in response')
-          throw new Error('Token không hợp lệ từ máy chủ')
-        }
-
-        console.log('[AuthStore] Setting token in state and localStorage')
-        this.token = token
+        // Store tokens and user data
+        this.token = data.data.token
+        this.refreshToken = data.data.refreshToken
+        this.expiresIn = data.data.expiresIn
+        this.userData = data.data.user
         this.isAuthenticated = true
-        localStorage.setItem('token', token)
-        console.log('[AuthStore] Token successfully stored')
+
+        // Save to localStorage
+        localStorage.setItem('token', data.data.token)
+        localStorage.setItem('refreshToken', data.data.refreshToken)
+        localStorage.setItem('user', JSON.stringify(data.data.user))
         
+        console.log('[AuthStore] Login successful, data stored')
         return true
       } catch (err) {
         console.error('[AuthStore] Login error:', err)
@@ -91,9 +107,12 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         console.log('[AuthStore] Clearing auth state and localStorage')
         this.token = null
+        this.refreshToken = null
+        this.expiresIn = null
         this.isAuthenticated = false
         this.userData = null
         localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
         console.log('[AuthStore] Logout complete')
       }
@@ -102,14 +121,16 @@ export const useAuthStore = defineStore('auth', {
     initializeAuth() {
       console.log('[AuthStore] Initializing auth state')
       const token = localStorage.getItem('token')
+      const refreshToken = localStorage.getItem('refreshToken')
       const userData = localStorage.getItem('user')
       
-      if (token) {
-        console.log('[AuthStore] Found token in localStorage')
+      if (token && refreshToken) {
+        console.log('[AuthStore] Found tokens in localStorage')
         this.token = token
+        this.refreshToken = refreshToken
         this.isAuthenticated = true
       } else {
-        console.log('[AuthStore] No token found in localStorage')
+        console.log('[AuthStore] No tokens found in localStorage')
       }
       
       if (userData) {
@@ -125,7 +146,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    setUserData(data: any) {
+    setUserData(data: UserData) {
       console.log('[AuthStore] Setting user data:', data)
       this.userData = data
       localStorage.setItem('user', JSON.stringify(data))
