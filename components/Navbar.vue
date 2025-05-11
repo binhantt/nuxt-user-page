@@ -85,6 +85,57 @@
               </a>
             </div>
           </div>
+
+          <div class="navbar-item">
+            <div class="buttons" v-if="!authStore.isLoggedIn">
+              <NuxtLink to="/account" class="button is-primary">
+                <strong>Đăng Nhập</strong>
+              </NuxtLink>
+              <NuxtLink to="/register" class="button is-light">
+                Đăng Ký
+              </NuxtLink>
+            </div>
+            <div class="navbar-item has-dropdown is-hoverable" v-else>
+              <a class="navbar-link">
+                {{ authStore.getUserData?.fullName || 'Tài khoản' }}
+              </a>
+              <div class="navbar-dropdown is-right">
+                <NuxtLink 
+                  v-if="authStore.getUserData?.name"
+                  :to="`/trang_ca_nhan/${authStore.getUserData.name}`" 
+                  class="navbar-item"
+                >
+                  <span class="icon">
+                    <i class="fas fa-user"></i>
+                  </span>
+                  <span>Thông tin tài khoản</span>
+                </NuxtLink>
+                <a 
+                  v-else 
+                  class="navbar-item has-text-danger"
+                  @click="handleProfileError"
+                >
+                  <span class="icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                  </span>
+                  <span>Lỗi tải thông tin</span>
+                </a>
+                <NuxtLink to="/orders" class="navbar-item">
+                  <span class="icon">
+                    <i class="fas fa-shopping-bag"></i>
+                  </span>
+                  <span>Đơn hàng của tôi</span>
+                </NuxtLink>
+                <hr class="navbar-divider">
+                <a class="navbar-item" @click="handleLogout">
+                  <span class="icon">
+                    <i class="fas fa-sign-out-alt"></i>
+                  </span>
+                  <span>Đăng xuất</span>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -94,11 +145,39 @@
 <script setup>
 const isMenuActive = ref(false)
 const categoryStore = useCategoryStore()
+const authStore = useAuthStore()
+const userStore = useUserStore()
+
 const { categories } = storeToRefs(categoryStore)
 
-onMounted(() => {
-  categoryStore.fetchCategories()
+const handleProfileError = () => {
+  // Reload user profile data and update auth store
+  userStore.fetchProfile().then(profileData => {
+    if (profileData) {
+      authStore.setUserData(profileData)
+    }
+  })
+}
 
+const handleLogout = async () => {
+  await authStore.logout()
+  userStore.clearProfile()
+  navigateTo('/')
+}
+
+onMounted(async () => {
+  categoryStore.fetchCategories()
+  // Initialize auth state
+  authStore.initializeAuth()
+  
+  // If authenticated but no user data, fetch profile
+  if (authStore.isLoggedIn && !authStore.getUserData) {
+    console.log('Fetching profile data...')
+    const profileData = await userStore.fetchProfile()
+    if (profileData) {
+      authStore.setUserData(profileData)
+    }
+  }
 })
 </script>
 

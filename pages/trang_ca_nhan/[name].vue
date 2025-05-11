@@ -3,18 +3,18 @@
     <div class="container">
       <div class="columns is-centered">
         <div class="column is-8">
-          <div v-if="!isLoading && user" class="box profile-box">
+          <div v-if="!userStore.isLoading && userStore.viewedUser" class="box profile-box">
             <!-- Profile Header -->
             <div class="profile-header">
               <div class="avatar-wrapper">
                 <figure class="image is-128x128">
                   <img
                     class="is-rounded"
-                    :src="user.avatar || 'https://bulma.io/images/placeholders/128x128.png'"
+                    :src="userStore.viewedUser.avatar || 'https://bulma.io/images/placeholders/128x128.png'"
                     alt="Avatar"
                   >
                 </figure>
-                <button v-if="isOwnProfile" class="button is-small is-primary" @click="uploadAvatar">
+                <button v-if="userStore.isOwnProfile" class="button is-small is-primary" @click="uploadAvatar">
                   <span class="icon">
                     <i class="fas fa-camera"></i>
                   </span>
@@ -22,15 +22,15 @@
                 </button>
               </div>
               <div class="profile-info">
-                <h1 class="title is-3">{{ user.fullName }}</h1>
-                <p class="subtitle is-5">@{{ route.params.username }}</p>
+                <h1 class="title is-3">{{ userStore.viewedUser?.fullName }}</h1>
+                <p class="subtitle is-5">@{{ route.params.name }}</p>
                 <p class="joined-date">
-                  Tham gia từ: {{ formatDate(user.joinedDate) }}
+                  Tham gia từ: {{ formatDate(userStore.viewedUser?.createdAt || '') }}
                 </p>
               </div>
             </div>
 
-            <!-- Profile Tabs - Only show all tabs for own profile -->
+            <!-- Profile Tabs -->
             <div class="tabs is-boxed mb-5">
               <ul>
                 <li :class="{ 'is-active': activeTab === 'info' }">
@@ -39,13 +39,13 @@
                     <span>Thông Tin</span>
                   </a>
                 </li>
-                <li v-if="isOwnProfile" :class="{ 'is-active': activeTab === 'orders' }">
+                <li v-if="userStore.isOwnProfile" :class="{ 'is-active': activeTab === 'orders' }">
                   <a @click="activeTab = 'orders'">
                     <span class="icon"><i class="fas fa-shopping-bag"></i></span>
                     <span>Đơn Hàng</span>
                   </a>
                 </li>
-                <li v-if="isOwnProfile" :class="{ 'is-active': activeTab === 'security' }">
+                <li v-if="userStore.isOwnProfile" :class="{ 'is-active': activeTab === 'security' }">
                   <a @click="activeTab = 'security'">
                     <span class="icon"><i class="fas fa-shield-alt"></i></span>
                     <span>Bảo Mật</span>
@@ -58,14 +58,14 @@
             <div class="profile-content">
               <!-- Info Tab -->
               <div v-if="activeTab === 'info'" class="tab-content">
-                <form v-if="isOwnProfile" @submit.prevent="updateProfile">
+                <form v-if="userStore.isOwnProfile" @submit.prevent="handleUpdateProfile">
                   <div class="field">
                     <label class="label">Họ và Tên</label>
                     <div class="control">
                       <input
                         class="input"
                         type="text"
-                        v-model="user.fullName"
+                        v-model="editForm.fullName"
                         placeholder="Họ và tên"
                       >
                     </div>
@@ -77,7 +77,7 @@
                       <input
                         class="input"
                         type="tel"
-                        v-model="user.phone"
+                        v-model="editForm.phoneNumber"
                         placeholder="Số điện thoại"
                       >
                     </div>
@@ -88,7 +88,7 @@
                     <div class="control">
                       <textarea
                         class="textarea"
-                        v-model="user.address"
+                        v-model="editForm.address"
                         placeholder="Địa chỉ"
                       ></textarea>
                     </div>
@@ -109,17 +109,25 @@
                 <div v-else class="user-info">
                   <div class="info-item">
                     <strong>Họ và Tên:</strong>
-                    <span>{{ user.fullName }}</span>
+                    <span>{{ userStore.viewedUser.fullName }}</span>
                   </div>
                   <div class="info-item">
                     <strong>Email:</strong>
-                    <span>{{ user.email }}</span>
+                    <span>{{ userStore.viewedUser.email }}</span>
+                  </div>
+                  <div v-if="userStore.viewedUser.phoneNumber" class="info-item">
+                    <strong>Số Điện Thoại:</strong>
+                    <span>{{ userStore.viewedUser.phoneNumber }}</span>
+                  </div>
+                  <div v-if="userStore.viewedUser.address" class="info-item">
+                    <strong>Địa Chỉ:</strong>
+                    <span>{{ userStore.viewedUser.address }}</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Orders Tab - Only for own profile -->
-              <div v-if="isOwnProfile && activeTab === 'orders'" class="tab-content">
+              <!-- Orders Tab -->
+              <div v-if="userStore.isOwnProfile && activeTab === 'orders'" class="tab-content">
                 <div v-if="orders.length > 0">
                   <div class="order-card" v-for="order in orders" :key="order.id">
                     <div class="order-header">
@@ -148,9 +156,9 @@
                 </div>
               </div>
 
-              <!-- Security Tab - Only for own profile -->
-              <div v-if="isOwnProfile && activeTab === 'security'" class="tab-content">
-                <form @submit.prevent="changePassword">
+              <!-- Security Tab -->
+              <div v-if="userStore.isOwnProfile && activeTab === 'security'" class="tab-content">
+                <form @submit.prevent="handlePasswordChange">
                   <div class="field">
                     <label class="label">Mật Khẩu Hiện Tại</label>
                     <div class="control">
@@ -203,12 +211,20 @@
               </div>
             </div>
           </div>
-          <!-- Loading and Error States -->
-          <div v-else-if="isLoading" class="has-text-centered py-6">
+
+          <!-- Loading State -->
+          <div v-else-if="userStore.isLoading" class="has-text-centered py-6">
             <span class="icon is-large">
               <i class="fas fa-spinner fa-pulse fa-2x"></i>
             </span>
           </div>
+
+          <!-- Error State -->
+          <div v-else-if="userStore.getError" class="notification is-danger">
+            {{ userStore.getError }}
+          </div>
+
+          <!-- Not Found State -->
           <div v-else class="notification is-danger">
             Không tìm thấy người dùng
           </div>
@@ -218,24 +234,47 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore, useAuthStore } from '../stores'
+
 const route = useRoute()
-const isLoading = ref(true)
+const router = useRouter()
+const userStore = useUserStore()
+const authStore = useAuthStore()
+
 const isUpdating = ref(false)
 const activeTab = ref('info')
 
-// Simulated user data - In real app, fetch from API based on username
-const user = ref(null)
-const currentUser = ref({
-  username: 'nguyenvana',
-  fullName: 'Nguyễn Văn A',
-  email: 'nguyenvana@example.com'
+// Form for editing profile
+const editForm = reactive({
+  fullName: '',
+  phoneNumber: '',
+  address: ''
 })
 
-// Check if viewing own profile
-const isOwnProfile = computed(() => {
-  return currentUser.value.username === route.params.username
+// Get stored user data
+const storedUser = ref(null)
+onMounted(() => {
+  try {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      storedUser.value = JSON.parse(userData)
+      console.log('Stored user data:', storedUser.value)
+    }
+  } catch (error) {
+    console.error('Error parsing stored user data:', error)
+  }
 })
+
+// Initialize edit form when user data is loaded
+watch(() => userStore.viewedUser, (newUser) => {
+  if (newUser) {
+    editForm.fullName = newUser.fullName
+    editForm.phoneNumber = newUser.phoneNumber || ''
+    editForm.address = newUser.address || ''
+  }
+}, { immediate: true })
 
 // Simulated orders data
 const orders = ref([
@@ -263,42 +302,23 @@ const passwordForm = ref({
 })
 
 // Format date helper
-const formatDate = (date) => {
+const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('vi-VN')
 }
 
-// Simulate fetching user data
-const fetchUserData = async () => {
-  isLoading.value = true
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    // Simulate API response
-    if (route.params.username === 'nguyenvana') {
-      user.value = {
-        fullName: 'Nguyễn Văn A',
-        email: 'nguyenvana@example.com',
-        phone: '0123456789',
-        address: 'Hà Nội, Việt Nam',
-        avatar: null,
-        joinedDate: new Date('2024-01-01')
-      }
-    } else {
-      user.value = null
-    }
-  } catch (error) {
-    console.error('Failed to fetch user:', error)
-    user.value = null
-  } finally {
-    isLoading.value = false
-  }
-}
-
 // Handle profile update
-const updateProfile = async () => {
+const handleUpdateProfile = async () => {
   isUpdating.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    alert('Cập nhật thông tin thành công!')
+    const success = await userStore.updateProfile({
+      fullName: editForm.fullName,
+      phoneNumber: editForm.phoneNumber,
+      address: editForm.address
+    })
+    
+    if (success) {
+      alert('Cập nhật thông tin thành công!')
+    }
   } catch (error) {
     console.error('Update failed:', error)
   } finally {
@@ -307,7 +327,7 @@ const updateProfile = async () => {
 }
 
 // Handle password change
-const changePassword = async () => {
+const handlePasswordChange = async () => {
   if (passwordForm.value.new !== passwordForm.value.confirm) {
     alert('Mật khẩu xác nhận không khớp')
     return
@@ -330,8 +350,49 @@ const uploadAvatar = () => {
   alert('Tính năng đang được phát triển')
 }
 
-// Fetch user data when route changes
-watch(() => route.params.username, fetchUserData, { immediate: true })
+// Load initial data
+onMounted(async () => {
+  const name = route.params.name
+  if (!name || typeof name !== 'string') {
+    console.error('Invalid name in route:', name)
+    // If logged in, redirect to own profile
+    const userData = authStore.getUserData
+    if (authStore.isLoggedIn && userData?.name) {
+      await navigateTo(`/trang_ca_nhan/${userData.name}`)
+    } else {
+      await navigateTo('/')
+    }
+    return
+  }
+
+  console.log('Fetching user data for name:', name)
+  const userData = await userStore.fetchUserByUsername(name)
+  if (!userData) {
+    console.error('Failed to fetch user data for name:', name)
+  }
+})
+
+// Watch for route changes
+watch(() => route.params.name, async (newName) => {
+  if (!newName || typeof newName !== 'string') {
+    console.error('Invalid name in route:', newName)
+    const userData = authStore.getUserData
+    if (authStore.isLoggedIn && userData?.name) {
+      await navigateTo(`/trang_ca_nhan/${userData.name}`)
+    } else {
+      await navigateTo('/')
+    }
+    return
+  }
+
+  console.log('Route name changed to:', newName)
+  await userStore.fetchUserByUsername(newName)
+})
+
+// Clean up when component unmounts
+onUnmounted(() => {
+  userStore.clearProfile()
+})
 </script>
 
 <style scoped>

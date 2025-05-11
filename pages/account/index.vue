@@ -5,6 +5,12 @@
         <div class="column is-5-tablet is-4-desktop">
           <div class="box">
             <h1 class="title has-text-centered">Đăng Nhập</h1>
+            
+            <!-- Error Message -->
+            <div v-if="authStore.getError" class="notification is-danger">
+              {{ authStore.getError }}
+            </div>
+
             <form @submit.prevent="handleLogin">
               <!-- Email Field -->
               <div class="field">
@@ -47,12 +53,13 @@
                   Hiện mật khẩu
                 </label>
               </div>
+
               <!-- Submit Button -->
               <div class="field">
                 <div class="control">
                   <button
                     class="button is-primary is-fullwidth"
-                    :class="{ 'is-loading': isLoading }"
+                    :class="{ 'is-loading': authStore.isLoading }"
                     type="submit"
                   >
                     Đăng Nhập
@@ -79,51 +86,43 @@
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
-const captchaText = ref('')
-const captchaInput = ref('')
-const isLoading = ref(false)
 
-// Generate random CAPTCHA text
-const generateCaptcha = () => {
-  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-  let result = ''
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
-}
-
-// Refresh CAPTCHA
-const refreshCaptcha = () => {
-  captchaText.value = generateCaptcha()
-  captchaInput.value = ''
-}
-
-// Initialize CAPTCHA on component mount
-onMounted(() => {
-  refreshCaptcha()
-})
+const authStore = useAuthStore()
+const userStore = useUserStore()
 
 // Handle login form submission
 const handleLogin = async () => {
-  if (captchaInput.value !== captchaText.value) {
-    alert('CAPTCHA không chính xác')
-    return
-  }
+  console.log('Attempting login with:', { email: email.value, password: password.value })
+  
+  const success = await authStore.login(email.value, password.value)
+  console.log('Login result:', { success, token: authStore.getToken })
+  
+  if (success) {
+    console.log('Login successful, fetching profile...')
+    const profileData = await userStore.fetchProfile()
+    console.log('Profile fetched:', profileData)
 
-  isLoading.value = true
-  try {
-    // Here you would typically make an API call to your backend
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Simulated API call
-    console.log('Login attempt:', { email: email.value, password: password.value })
-    // Navigate to user profile using username
-    navigateTo('/nguyenvana') // In a real app, this would use the username from the API response
-  } catch (error) {
-    console.error('Login failed:', error)
-  } finally {
-    isLoading.value = false
+    if (profileData) {
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(profileData))
+      console.log('User data stored in localStorage')
+      
+      // Navigate to home page
+      navigateTo('/')
+    } else {
+      console.error('Failed to fetch profile data')
+    }
+  } else {
+    console.error('Login failed:', authStore.getError)
   }
 }
+
+// Clear any existing errors when component mounts
+onMounted(() => {
+  console.log('Login page mounted, clearing previous state')
+  authStore.clearError()
+  userStore.clearProfile()
+})
 </script>
 
 <style scoped>
