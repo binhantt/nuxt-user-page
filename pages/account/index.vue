@@ -118,7 +118,7 @@ const handleLogin = async () => {
         console.log('[Login] User data stored in localStorage')
         
         // Navigate to home page
-        await navigateTo('/')
+         navigateTo('/')
       } else {
         console.error('[Login] Failed to fetch profile data')
         throw new Error('Không thể tải thông tin người dùng')

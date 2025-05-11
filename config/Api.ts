@@ -11,7 +11,18 @@ export const API_ENDPOINTS = {
   // User endpoints
   users: `${BASE_URL}/users`,
   // Category endpoints
-  categories: `${BASE_URL}/users/categroy`
+  categories: `${BASE_URL}/users/categroy`,
+  // Product endpoints
+  products: {
+    list: `${BASE_URL}/users/products`,
+    detail: (id: string | number) => `${BASE_URL}/users/products/${id}`,
+    create: `${BASE_URL}/users/products`,
+    update: (id: string | number) => `${BASE_URL}/users/products/${id}`,
+    delete: (id: string | number) => `${BASE_URL}/users/products/${id}`,
+    search: `${BASE_URL}/users/products/search`,
+    byCategory: (categoryId: string | number) => `${BASE_URL}/products/category/${categoryId}`,
+    byPlatform: (platform: string) => `${BASE_URL}/products/platform/${platform}`
+  }
 }
 
 export default API_ENDPOINTS

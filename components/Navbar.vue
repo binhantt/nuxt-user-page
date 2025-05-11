@@ -91,9 +91,7 @@
               <NuxtLink to="/account" class="button is-primary">
                 <strong>Đăng Nhập</strong>
               </NuxtLink>
-              <NuxtLink to="/register" class="button is-light">
-                Đăng Ký
-              </NuxtLink>
+             
             </div>
             <div class="navbar-item has-dropdown is-hoverable" v-else>
               <a class="navbar-link">

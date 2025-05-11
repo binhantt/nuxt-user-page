@@ -6,160 +6,157 @@
       <div class="tabs is-centered mb-5">
         <ul>
           <li :class="{ 'is-active': activeCategory === 'all' }">
-            <a @click="activeCategory = 'all'">Tất Cả</a>
+            <a @click="setCategory('all')">Tất Cả</a>
           </li>
-          <li :class="{ 'is-active': activeCategory === 'shopee' }">
-            <a @click="activeCategory = 'shopee'">Shopee</a>
-          </li>
-          <li :class="{ 'is-active': activeCategory === 'tiki' }">
-            <a @click="activeCategory = 'tiki'">Tiki</a>
-          </li>
-          <li :class="{ 'is-active': activeCategory === 'lazada' }">
-            <a @click="activeCategory = 'lazada'">Lazada</a>
+          <li v-for="category in categories" :key="category.id"
+              :class="{ 'is-active': activeCategory === category.id }">
+            <a @click="setCategory(category.id)">{{ category.name }}</a>
           </li>
         </ul>
       </div>
 
-      <swiper
-        :modules="[SwiperGrid, SwiperPagination]"
-        :slides-per-view="3"
-        :grid="{
-          rows: 2,
-          fill: 'row'
-        }"
-        :space-between="30"
-        :pagination="{
-          clickable: true
-        }"
-        :breakpoints="{
-          '320': {
-            slidesPerView: 1,
-            grid: {
-              rows: 1
-            }
-          },
-          '768': {
-            slidesPerView: 2,
-            grid: {
-              rows: 2
-            }
-          },
-          '1024': {
-            slidesPerView: 3,
-            grid: {
-              rows: 2
-            }
-          }
-        }"
-        class="products-swiper"
-      >
-        <swiper-slide v-for="product in filteredProducts" :key="product.id">
+      <!-- Loading State -->
+      <div v-if="productStore.isLoading" class="has-text-centered py-6">
+        <span class="icon is-large">
+          <i class="fas fa-spinner fa-pulse fa-2x"></i>
+        </span>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="productStore.getError" class="notification is-danger">
+        {{ productStore.getError }}
+      </div>
+
+      <!-- Products Grid -->
+      <div v-else class="columns is-multiline">
+        <div v-for="product in products" 
+             :key="product.id" 
+             class="column is-4-tablet is-3-desktop">
           <div class="product-card">
             <div class="product-image">
-              <img :src="product.image" :alt="product.name">
+              <img :src="product.main_image_url" :alt="product.name">
               <div class="product-overlay">
-                <button class="button is-primary is-rounded">
+                <NuxtLink :to="`/product/${product.id}`" class="button is-primary is-rounded">
                   <span class="icon">
                     <i class="fas fa-eye"></i>
                   </span>
                   <span>Xem Chi Tiết</span>
-                </button>
+                </NuxtLink>
               </div>
-              <div class="product-badge" :class="'is-' + product.platform">
-                {{ product.platform.toUpperCase() }}
+              <div v-if="product.category" class="product-badge">
+                {{ product.category.name }}
               </div>
             </div>
             <div class="product-content">
               <h3 class="title is-5">
-                <NuxtLink :to="`/product/${product.slug}`" class="has-text-dark">
+                <NuxtLink :to="`/product/${product.id}`" class="has-text-dark">
                   {{ product.name }}
                 </NuxtLink>
               </h3>
               <p class="subtitle is-6 has-text-grey">{{ product.description }}</p>
               <div class="price-tag">
-                {{ product.price }}
+                {{ formatPrice(product.price) }}
+              </div>
+              <div class="stock-info mt-2">
+                <span class="tag" :class="product.stock > 0 ? 'is-success' : 'is-danger'">
+                  {{ product.stock > 0 ? 'Còn hàng' : 'Hết hàng' }}
+                </span>
+                <span class="tag is-info ml-2" v-if="product.stock > 0">
+                  Còn {{ product.stock }} sản phẩm
+                </span>
               </div>
             </div>
           </div>
-        </swiper-slide>
-      </swiper>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <nav v-if="pagination.totalPages > 1" 
+           class="pagination is-centered mt-6" 
+           role="navigation" 
+           aria-label="pagination">
+        <a class="pagination-previous" 
+           :disabled="currentPage === 1"
+           @click="changePage(currentPage - 1)">
+          Trang trước
+        </a>
+        <a class="pagination-next" 
+           :disabled="currentPage === pagination.totalPages"
+           @click="changePage(currentPage + 1)">
+          Trang sau
+        </a>
+        <ul class="pagination-list">
+          <li v-for="page in pagination.totalPages" :key="page">
+            <a class="pagination-link" 
+               :class="{ 'is-current': page === currentPage }"
+               @click="changePage(page)">
+              {{ page }}
+            </a>
+          </li>
+        </ul>
+      </nav>
     </div>
   </section>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Grid, Pagination } from 'swiper/modules'
-import 'swiper/css'
-import 'swiper/css/grid'
-import 'swiper/css/pagination'
+import { ref, onMounted, computed } from 'vue'
+import { useProductStore } from '~/stores/productStore'
+import { useCategoryStore } from '~/stores/categoryStore'
 
-const SwiperGrid = Grid
-const SwiperPagination = Pagination
+const productStore = useProductStore()
+const categoryStore = useCategoryStore()
 
 const activeCategory = ref('all')
+const currentPage = ref(1)
 
-const products = [
-  {
-    id: 1,
-    name: 'Template Shopee Basic',
-    description: 'Giao diện cơ bản cho shop Shopee',
-    price: '299.000đ',
-    platform: 'shopee',
-    slug: 'template-shopee-basic',
-    image: 'https://img.freepik.com/free-vector/online-shopping-banner-mobile-app-templates-concept-flat-design_1150-34863.jpg'
-  },
-  {
-    id: 2,
-    name: 'Template Tiki Pro',
-    description: 'Giao diện chuyên nghiệp cho Tiki',
-    price: '399.000đ',
-    platform: 'tiki',
-    slug: 'template-tiki-pro',
-    image: 'https://img.freepik.com/free-vector/ecommerce-web-page-concept-illustration_114360-8204.jpg'
-  },
-  {
-    id: 3,
-    name: 'Template Lazada Premium',
-    description: 'Giao diện cao cấp cho Lazada',
-    price: '499.000đ',
-    platform: 'lazada',
-    slug: 'template-lazada-premium',
-    image: 'https://img.freepik.com/free-vector/shopping-online-landing-page_23-2148253001.jpg'
-  },
-  {
-    id: 4,
-    name: 'Template Shopee Plus',
-    description: 'Giao diện nâng cao cho Shopee',
-    price: '399.000đ',
-    platform: 'shopee',
-    slug: 'template-shopee-plus',
-    image: 'https://img.freepik.com/free-vector/ecommerce-campaign-concept-illustration_114360-8432.jpg'
-  },
-  {
-    id: 5,
-    name: 'Template Tiki Basic',
-    description: 'Giao diện đơn giản cho Tiki',
-    price: '299.000đ',
-    platform: 'tiki',
-    slug: 'template-tiki-basic',
-    image: 'https://img.freepik.com/free-vector/ecommerce-shop-category-page-illustration_23-2148400175.jpg'
-  },
-  {
-    id: 6,
-    name: 'Template Lazada Basic',
-    description: 'Giao diện cơ bản cho Lazada',
-    price: '299.000đ',
-    platform: 'lazada',
-    slug: 'template-lazada-basic',
-    image: 'https://img.freepik.com/free-vector/online-shopping-concept-illustration_114360-1084.jpg'
+const categories = computed(() => categoryStore.categories?.data || [])
+const products = computed(() => productStore.getProducts?.data || [])
+console.log(products.value)
+const pagination = computed(() => productStore.getProducts?.pagination || {
+  currentPage: 1,
+  totalPages: 1,
+  totalItems: 0,
+  itemsPerPage: 12
+})
+
+// Format price to VND
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(price)
+}
+
+// Set category and fetch products
+const setCategory = async (categoryId) => {
+  activeCategory.value = categoryId
+  currentPage.value = 1
+  await fetchProducts()
+}
+
+// Change page
+const changePage = async (page) => {
+  currentPage.value = page
+  await fetchProducts()
+}
+
+// Fetch products with filters
+const fetchProducts = async () => {
+  const filters = {
+    ...(activeCategory.value !== 'all' && { category_id: activeCategory.value })
   }
-]
+  await productStore.fetchProducts(currentPage.value, filters)
+}
 
-const filteredProducts = computed(() => {
-  if (activeCategory.value === 'all') return products
-  return products.filter(product => product.platform === activeCategory.value)
+// Initialize component
+onMounted(async () => {
+  await Promise.all([
+    categoryStore.fetchCategories(),
+    fetchProducts()
+  ])
 })
 </script>
 
@@ -167,10 +164,6 @@ const filteredProducts = computed(() => {
 .products-section {
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 6rem 1.5rem;
-}
-
-.products-swiper {
-  padding-bottom: 4rem;
 }
 
 .product-card {
@@ -190,7 +183,7 @@ const filteredProducts = computed(() => {
 
 .product-image {
   position: relative;
-  padding-top: 60%;
+  padding-top: 75%;
   overflow: hidden;
 }
 
@@ -235,18 +228,7 @@ const filteredProducts = computed(() => {
   color: white;
   font-weight: bold;
   font-size: 0.8rem;
-}
-
-.product-badge.is-shopee {
-  background: #ee4d2d;
-}
-
-.product-badge.is-tiki {
-  background: #1ba8ff;
-}
-
-.product-badge.is-lazada {
-  background: #f36f21;
+  background: #3273dc;
 }
 
 .product-content {
@@ -266,18 +248,23 @@ const filteredProducts = computed(() => {
   margin-top: auto;
 }
 
+.stock-info {
+  margin-top: 1rem;
+}
+
 .tabs li.is-active a {
   border-bottom-color: #3273dc;
   color: #3273dc;
-}
-
-:deep(.swiper-pagination-bullet) {
-  background: #3273dc;
 }
 
 .title.is-2 {
   background: linear-gradient(45deg, #3273dc, #00d1b2);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.pagination-link.is-current {
+  background-color: #3273dc;
+  border-color: #3273dc;
 }
 </style> 
