@@ -21,7 +21,7 @@
       <div v-else-if="!hasAnyProducts" class="content has-text-centered py-6">
         <p class="is-size-4">Không tìm thấy sản phẩm nào phù hợp.</p>
         <p class="mt-4">
-          <NuxtLink to="/" class="button is-warning">
+          <NuxtLink to="/" class="button is-primary is-outlined">
             Quay lại trang chủ
           </NuxtLink>
         </p>
@@ -30,29 +30,46 @@
       <!-- Search Results -->
       <div v-else class="content">
         <div v-for="category in safeDisplayProducts" :key="category?.category?.id || 'unknown'" class="mb-6">
-          <h2 class="title is-4">{{ category?.category?.name || 'Không có danh mục' }}</h2>
           <div class="columns is-multiline">
             <div v-for="product in category?.products || []" :key="product?.id || 'unknown'" class="column is-3">
-              <div class="card">
-                <div class="card-image">
-                  <figure class="image is-4by3">
-                    <img :src="product?.main_image_url" :alt="product?.name">
-                  </figure>
+              <div class="product-card">
+                <!-- Category Tag -->
+                <div class="category-tag">
+                  {{ category?.category?.name || 'Không có danh mục' }}
                 </div>
-                <div class="card-content">
-                  <p class="title is-5">{{ product?.name || 'Không có tên' }}</p>
-                  <p class="has-text-primary has-text-weight-bold">
-                    {{ formatPrice(product?.price) }}đ
-                  </p>
+
+                <!-- Product Image -->
+                <div class="product-image">
+                  <img :src="product?.main_image_url" :alt="product?.name">
                 </div>
-                <footer class="card-footer">
-                  <NuxtLink :to="'/product/' + (product?.id || '')" class="card-footer-item has-background-primary has-text-white">
-                    Chi tiết
-                  </NuxtLink>
-                  <a @click="addToCart(product)" class="card-footer-item has-background-warning">
-                    Thêm vào giỏ
-                  </a>
-                </footer>
+
+                <!-- Product Info -->
+                <div class="product-info">
+                  <h3 class="product-title">{{ product?.name || 'Không có tên' }}</h3>
+                  <p class="product-description">{{ product?.description || 'Điện thoại cao cấp nhất của Apple' }}</p>
+                  
+                  <!-- Price and Stock -->
+                  <div class="price-stock">
+                    <div class="price">{{ formatPrice(product?.price) }}đ</div>
+                    <div class="stock">
+                      <span class="stock-label">Còn hàng</span>
+                      <span class="stock-count">100 sản phẩm</span>
+                    </div>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="product-actions">
+                    <NuxtLink 
+                      :to="'/product/' + slugify(product?.name || '')" 
+                      class="button is-primary is-fullwidth"
+                    >
+                      Chi tiết
+                    </NuxtLink>
+                    <button @click="addToCart(product)" class="button is-warning is-fullwidth mt-2">
+                      Thêm vào giỏ
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -67,6 +84,29 @@ import { useSearchStore } from '~/stores/searchStore'
 
 const route = useRoute()
 const searchStore = useSearchStore()
+
+// Function to convert product name to URL-friendly slug
+function slugify(text) {
+  if (!text) return ''
+  
+  // Convert Vietnamese characters to non-accented
+  const from = "àáãảạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
+  const to = "aaaaaaaaaaaaaaaaaeeeeeeeeeeediiiiioooooooooooooooouuuuuuuuuuuyyyyy"
+  
+  let result = text.toLowerCase()
+  
+  // Replace Vietnamese characters
+  for (let i = 0; i < from.length; i++) {
+    result = result.replace(new RegExp(from[i], 'g'), to[i])
+  }
+  
+  return result
+    .replace(/[^a-z0-9\s-]/g, '') // Remove invalid chars
+    .replace(/\s+/g, '-') // Replace spaces with -
+    .replace(/-+/g, '-') // Replace multiple - with single -
+    .trim() // Trim spaces from start and end
+}
+
 const searchQuery = computed(() => {
   const query = decodeURIComponent(route.params.query || '')
   console.log('[Search Page] Current search query:', query)
@@ -178,61 +218,141 @@ const addToCart = (product) => {
 
 <style scoped>
 .section {
-  background-color: #f5f5f5;
+  background-color: #f8f9fa;
   min-height: 100vh;
+  padding: 2rem;
 }
 
-.card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background-color: white;
+.product-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
 }
 
-.card:hover {
+.product-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(50, 115, 220, 0.2);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
 }
 
-.card-content {
-  flex-grow: 1;
+.category-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #4086f4;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  z-index: 1;
 }
 
-.card-footer-item {
-  transition: all 0.2s ease;
+.product-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
 }
 
-.card-footer-item.has-background-primary:hover {
-  background-color: #2366d1 !important;
-}
-
-.card-footer-item.has-background-warning:hover {
-  background-color: #ffed4a !important;
-}
-
-.image img {
+.product-image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.has-text-primary {
-  color: #3273dc !important;
+.product-card:hover .product-image img {
+  transform: scale(1.05);
 }
 
-.has-background-primary {
-  background-color: #3273dc !important;
+.product-info {
+  padding: 1.5rem;
 }
 
-.has-background-warning {
-  background-color: #ffd700 !important;
+.product-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.product-description {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.price-stock {
+  margin-bottom: 1.5rem;
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4086f4;
+  margin-bottom: 0.5rem;
+}
+
+.stock {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.stock-label {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.stock-count {
+  color: #7f8c8d;
+}
+
+.product-actions {
+  margin-top: 1rem;
+}
+
+.button.is-primary {
+  background-color: #4086f4;
+  border-color: transparent;
+}
+
+.button.is-primary:hover {
+  background-color: #3476e4;
 }
 
 .button.is-warning {
   background-color: #ffd700;
+  border-color: transparent;
   color: #363636;
 }
 
 .button.is-warning:hover {
-  background-color: #ffed4a;
+  background-color: #f4ce00;
 }
-</style> 
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .column.is-3 {
+    padding: 0.5rem;
+  }
+  
+  .product-card {
+    margin-bottom: 1rem;
+  }
+  
+  .product-image {
+    height: 180px;
+  }
+  
+  .product-info {
+    padding: 1rem;
+  }
+  
+  .price {
+    font-size: 1.25rem;
+  }
+}
+</style>
