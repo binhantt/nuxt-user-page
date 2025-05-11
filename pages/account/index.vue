@@ -47,31 +47,6 @@
                   Hiện mật khẩu
                 </label>
               </div>
-
-              <!-- CAPTCHA -->
-              <div class="field">
-                <label class="label">CAPTCHA</label>
-                <div class="captcha-container">
-                  <div class="captcha-image" @click="refreshCaptcha">
-                    {{ captchaText }}
-                  </div>
-                  <button type="button" class="button is-small" @click="refreshCaptcha">
-                    <span class="icon">
-                      <i class="fas fa-sync"></i>
-                    </span>
-                  </button>
-                </div>
-                <div class="control">
-                  <input
-                    class="input"
-                    type="text"
-                    v-model="captchaInput"
-                    placeholder="Nhập mã CAPTCHA"
-                    required
-                  >
-                </div>
-              </div>
-
               <!-- Submit Button -->
               <div class="field">
                 <div class="control">
