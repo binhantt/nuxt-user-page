@@ -2,186 +2,250 @@
   <div class="profile-page">
     <div class="container">
       <div class="columns is-centered">
-        <div class="column is-8">
-          <div v-if="userData" class="box profile-box">
-             <!-- Profile Header -->
-            <div class="profile-header">
-              <div class="avatar-wrapper">
-                <figure class="image is-128x128">
-                  <img
-                    class="is-rounded"
-                    src="https://bulma.io/images/placeholders/128x128.png"
-                    alt="Avatar"
-                  >
-                </figure>
-                <button v-if="isOwnProfile" class="button is-small is-warning" @click="uploadAvatar">
-                  <span class="icon">
-                    <i class="fas fa-camera"></i>
-                  </span>
-                  <span>Đổi ảnh</span>
-                </button>
-              </div>
-              <div class="profile-info">
-                <h1 class="title is-3">{{ userData.name }}</h1>
-                <p class="subtitle is-5">@{{ route.params.name }}</p>
-                <p class="joined-date">
-                  Tham gia từ: {{ formatDate(userData.created_at) }}
-                </p>
+        <div class="column is-10">
+          <div v-if="userData" class="profile-container">
+            <!-- Profile Header with Cover Image -->
+            <div class="profile-cover">
+              <div class="profile-header-content">
+                <div class="avatar-container">
+                  <figure class="image is-128x128">
+                    <img
+                      class="is-rounded avatar-image"
+                      src="https://bulma.io/images/placeholders/128x128.png"
+                      alt="Avatar"
+                    >
+                    <div v-if="isOwnProfile" class="avatar-overlay" @click="uploadAvatar">
+                      <span class="icon">
+                        <i class="fas fa-camera"></i>
+                      </span>
+                    </div>
+                  </figure>
+                </div>
+                <div class="profile-info">
+                  <h1 class="title is-2 has-text-white">{{ userData.name }}</h1>
+                  <p class="subtitle is-5 has-text-white-bis">@{{ route.params.name }}</p>
+                  <p class="joined-date has-text-white-ter">
+                    <span class="icon"><i class="fas fa-calendar-alt"></i></span>
+                    Tham gia từ: {{ formatDate(userData.created_at) }}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <!-- Profile Tabs -->
-            <div class="tabs is-boxed mb-5">
-              <ul>
-                <li :class="{ 'is-active': activeTab === 'info' }">
-                  <a @click="activeTab = 'info'">
-                    <span class="icon"><i class="fas fa-user"></i></span>
-                    <span>Thông Tin</span>
-                  </a>
-                </li>
-                <li v-if="isOwnProfile" :class="{ 'is-active': activeTab === 'orders' }">
-                  <a @click="activeTab = 'orders'">
-                    <span class="icon"><i class="fas fa-shopping-bag"></i></span>
-                    <span>Đơn Hàng</span>
-                  </a>
-                </li>
-                <li v-if="isOwnProfile" :class="{ 'is-active': activeTab === 'security' }">
-                  <a @click="activeTab = 'security'">
-                    <span class="icon"><i class="fas fa-shield-alt"></i></span>
-                    <span>Bảo Mật</span>
-                  </a>
-                </li>
-              </ul>
+            <!-- Profile Navigation -->
+            <div class="profile-nav">
+              <div class="tabs is-centered is-boxed">
+                <ul>
+                  <li :class="{ 'is-active': activeTab === 'info' }">
+                    <a @click="activeTab = 'info'" class="tab-link">
+                      <span class="icon"><i class="fas fa-user"></i></span>
+                      <span>Thông Tin</span>
+                    </a>
+                  </li>
+                  <li v-if="isOwnProfile" :class="{ 'is-active': activeTab === 'orders' }">
+                    <a @click="activeTab = 'orders'" class="tab-link">
+                      <span class="icon"><i class="fas fa-shopping-bag"></i></span>
+                      <span>Đơn Hàng</span>
+                    </a>
+                  </li>
+                  <li v-if="isOwnProfile" :class="{ 'is-active': activeTab === 'security' }">
+                    <a @click="activeTab = 'security'" class="tab-link">
+                      <span class="icon"><i class="fas fa-shield-alt"></i></span>
+                      <span>Bảo Mật</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             <!-- Profile Content -->
             <div class="profile-content">
               <!-- Info Tab -->
               <div v-if="activeTab === 'info'" class="tab-content">
-                <form v-if="isOwnProfile" @submit.prevent="handleUpdateProfile">
-                  <div class="field">
-                    <label class="label">Họ và Tên</label>
-                    <div class="control">
-                      <input
-                        class="input"
-                        type="text"
-                        v-model="editForm.name"
-                        placeholder="Họ và tên"
-                      >
+                <div class="card content-card">
+                  <div class="card-content">
+                    <form v-if="isOwnProfile" @submit.prevent="handleUpdateProfile" class="profile-form">
+                      <div class="field">
+                        <label class="label">Họ và Tên</label>
+                        <div class="control has-icons-left">
+                          <input
+                            class="input is-medium"
+                            type="text"
+                            v-model="editForm.name"
+                            placeholder="Họ và tên"
+                          >
+                          <span class="icon is-left">
+                            <i class="fas fa-user"></i>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label class="label">Số Điện Thoại</label>
+                        <div class="control has-icons-left">
+                          <input
+                            class="input is-medium"
+                            type="tel"
+                            v-model="editForm.phone"
+                            placeholder="Số điện thoại"
+                          >
+                          <span class="icon is-left">
+                            <i class="fas fa-phone"></i>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label class="label">Địa Chỉ</label>
+                        <div class="control has-icons-left">
+                          <textarea
+                            class="textarea"
+                            v-model="editForm.address"
+                            placeholder="Địa chỉ"
+                          ></textarea>
+                          <span class="icon is-left">
+                            <i class="fas fa-map-marker-alt"></i>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="field">
+                        <div class="control">
+                          <button
+                            class="button is-primary is-medium is-fullwidth"
+                            :class="{ 'is-loading': isUpdating }"
+                            type="submit"
+                          >
+                            <span class="icon">
+                              <i class="fas fa-save"></i>
+                            </span>
+                            <span>Cập Nhật Thông Tin</span>
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                    <div v-else class="user-info">
+                      <div class="info-card">
+                        <div class="info-item">
+                          <span class="icon has-text-primary">
+                            <i class="fas fa-user"></i>
+                          </span>
+                          <div class="info-content">
+                            <strong>Họ và Tên</strong>
+                            <p>{{ userData.name }}</p>
+                          </div>
+                        </div>
+                        <div class="info-item">
+                          <span class="icon has-text-primary">
+                            <i class="fas fa-envelope"></i>
+                          </span>
+                          <div class="info-content">
+                            <strong>Email</strong>
+                            <p>{{ userData.email }}</p>
+                          </div>
+                        </div>
+                        <div v-if="userData.phone" class="info-item">
+                          <span class="icon has-text-primary">
+                            <i class="fas fa-phone"></i>
+                          </span>
+                          <div class="info-content">
+                            <strong>Số Điện Thoại</strong>
+                            <p>{{ userData.phone }}</p>
+                          </div>
+                        </div>
+                        <div v-if="userData.address" class="info-item">
+                          <span class="icon has-text-primary">
+                            <i class="fas fa-map-marker-alt"></i>
+                          </span>
+                          <div class="info-content">
+                            <strong>Địa Chỉ</strong>
+                            <p>{{ userData.address }}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="field">
-                    <label class="label">Số Điện Thoại</label>
-                    <div class="control">
-                      <input
-                        class="input"
-                        type="tel"
-                        v-model="editForm.phone"
-                        placeholder="Số điện thoại"
-                      >
-                    </div>
-                  </div>
-                  <div class="field">
-                    <label class="label">Địa Chỉ</label>
-                    <div class="control">
-                      <textarea
-                        class="textarea"
-                        v-model="editForm.address"
-                        placeholder="Địa chỉ"
-                      ></textarea>
-                    </div>
-                  </div>
-                  <div class="field">
-                    <div class="control">
-                      <button
-                        class="button is-warning"
-                        :class="{ 'is-loading': isUpdating }"
-                        type="submit"
-                      >
-                        Cập Nhật
-                      </button>
-                    </div>
-                  </div>
-                </form>
-                <div v-else class="user-info">
-                  <div class="info-item">
-                    <strong>Họ và Tên:</strong>
-                    <span>{{ userData.name }}</span>
-                  </div>
-                  <div class="info-item">
-                    <strong>Email:</strong>
-                    <span>{{ userData.email }}</span>
-                  </div>
-                  <div v-if="userData.phone" class="info-item">
-                    <strong>Số Điện Thoại:</strong>
-                    <span>{{ userData.phone }}</span>
-                  </div>
-                  <div v-if="userData.address" class="info-item">
-                    <strong>Địa Chỉ:</strong>
-                    <span>{{ userData.address }}</span>
                   </div>
                 </div>
               </div>
 
               <!-- Orders Tab -->
               <div v-if="activeTab === 'orders'" class="tab-content">
-                <div class="notification is-warning">
-                  Tính năng đang được phát triển
+                <div class="card content-card">
+                  <div class="card-content has-text-centered">
+                    <span class="icon is-large has-text-warning">
+                      <i class="fas fa-tools fa-3x"></i>
+                    </span>
+                    <p class="title is-4 mt-4">Đang Phát Triển</p>
+                    <p class="subtitle is-6">Tính năng này sẽ sớm được ra mắt</p>
+                  </div>
                 </div>
               </div>
 
               <!-- Security Tab -->
               <div v-if="activeTab === 'security'" class="tab-content">
-                <form @submit.prevent="handlePasswordChange">
-                  <div class="field">
-                    <label class="label">Mật Khẩu Hiện Tại</label>
-                    <div class="control">
-                      <input
-                        class="input"
-                        type="password"
-                        v-model="passwordForm.current"
-                        required
-                      >
-                    </div>
-                  </div>
+                <div class="card content-card">
+                  <div class="card-content">
+                    <form @submit.prevent="handlePasswordChange" class="security-form">
+                      <div class="field">
+                        <label class="label">Mật Khẩu Hiện Tại</label>
+                        <div class="control has-icons-left">
+                          <input
+                            class="input is-medium"
+                            type="password"
+                            v-model="passwordForm.current"
+                            required
+                          >
+                          <span class="icon is-left">
+                            <i class="fas fa-lock"></i>
+                          </span>
+                        </div>
+                      </div>
 
-                  <div class="field">
-                    <label class="label">Mật Khẩu Mới</label>
-                    <div class="control">
-                      <input
-                        class="input"
-                        type="password"
-                        v-model="passwordForm.new"
-                        required
-                        minlength="8"
-                      >
-                    </div>
-                  </div>
+                      <div class="field">
+                        <label class="label">Mật Khẩu Mới</label>
+                        <div class="control has-icons-left">
+                          <input
+                            class="input is-medium"
+                            type="password"
+                            v-model="passwordForm.new"
+                            required
+                            minlength="8"
+                          >
+                          <span class="icon is-left">
+                            <i class="fas fa-key"></i>
+                          </span>
+                        </div>
+                      </div>
 
-                  <div class="field">
-                    <label class="label">Xác Nhận Mật Khẩu Mới</label>
-                    <div class="control">
-                      <input
-                        class="input"
-                        type="password"
-                        v-model="passwordForm.confirm"
-                        required
-                      >
-                    </div>
-                  </div>
+                      <div class="field">
+                        <label class="label">Xác Nhận Mật Khẩu Mới</label>
+                        <div class="control has-icons-left">
+                          <input
+                            class="input is-medium"
+                            type="password"
+                            v-model="passwordForm.confirm"
+                            required
+                          >
+                          <span class="icon is-left">
+                            <i class="fas fa-check-circle"></i>
+                          </span>
+                        </div>
+                      </div>
 
-                  <div class="field">
-                    <div class="control">
-                      <button
-                        class="button is-warning"
-                        :class="{ 'is-loading': isUpdating }"
-                        type="submit"
-                      >
-                        Đổi Mật Khẩu
-                      </button>
-                    </div>
+                      <div class="field">
+                        <div class="control">
+                          <button
+                            class="button is-primary is-medium is-fullwidth"
+                            :class="{ 'is-loading': isUpdating }"
+                            type="submit"
+                          >
+                            <span class="icon">
+                              <i class="fas fa-shield-alt"></i>
+                            </span>
+                            <span>Cập Nhật Mật Khẩu</span>
+                          </button>
+                        </div>
+                      </div>
+                    </form>
                   </div>
-                </form>
+                </div>
               </div>
             </div>
           </div>
@@ -189,13 +253,19 @@
           <!-- Loading State -->
           <div v-else-if="isUpdating" class="has-text-centered py-6">
             <span class="icon is-large">
-              <i class="fas fa-spinner fa-pulse fa-2x"></i>
+              <i class="fas fa-spinner fa-pulse fa-3x"></i>
             </span>
           </div>
 
           <!-- Not Found State -->
-          <div v-else class="notification is-warning">
-            Không tìm thấy người dùng
+          <div v-else class="notification is-danger is-light">
+            <div class="has-text-centered">
+              <span class="icon is-large">
+                <i class="fas fa-user-times fa-3x"></i>
+              </span>
+              <p class="title is-4 mt-4">Không Tìm Thấy</p>
+              <p class="subtitle is-6">Người dùng không tồn tại hoặc đã bị xóa</p>
+            </div>
           </div>
         </div>
       </div>
@@ -400,116 +470,177 @@ const uploadAvatar = () => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  padding: 5rem 1.5rem;
   background: #f5f5f5;
+  padding-bottom: 3rem;
 }
 
-.profile-box {
-  padding: 2rem;
+.profile-container {
   background: white;
-  box-shadow: 0 2px 10px rgba(50, 115, 220, 0.1);
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.profile-header {
+.profile-cover {
+  background: linear-gradient(135deg, #3273dc, #209cee);
+  height: 300px;
+  position: relative;
+  padding: 2rem;
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
+}
+
+.profile-header-content {
+  display: flex;
+  align-items: flex-end;
   gap: 2rem;
-  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
 }
 
-.avatar-wrapper {
-  text-align: center;
+.avatar-container {
+  position: relative;
+  margin-bottom: -2rem;
 }
 
-.avatar-wrapper button {
-  margin-top: 1rem;
+.avatar-image {
+  border: 4px solid white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.avatar-overlay:hover {
+  opacity: 1;
+}
+
+.avatar-overlay .icon {
+  color: white;
+  font-size: 2rem;
 }
 
 .profile-info {
-  flex-grow: 1;
+  padding-bottom: 2rem;
 }
 
-.joined-date {
-  color: #3273dc;
-  font-size: 0.9rem;
-}
-
-.tab-content {
-  padding: 1rem 0;
-}
-
-.order-card {
-  border: 1px solid #f5f5f5;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  overflow: hidden;
-}
-
-.order-header {
-  background: #f5f5f5;
+.profile-nav {
+  background: white;
   padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  border-bottom: 1px solid #f5f5f5;
 }
 
-.order-content {
-  padding: 1rem;
-}
-
-.order-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.order-item img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.order-footer {
-  background: #f5f5f5;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.tag.is-success {
+.tabs.is-boxed li.is-active .tab-link {
   background-color: #3273dc;
+  border-color: #3273dc;
   color: white;
 }
 
-.total {
-  font-weight: bold;
-  color: #3273dc;
+.tab-link {
+  transition: all 0.3s ease;
 }
 
-.user-info .info-item {
-  margin-bottom: 1rem;
+.tab-link:hover {
+  background-color: #f5f5f5;
 }
 
-.user-info .info-item strong {
-  display: inline-block;
-  width: 120px;
-  color: #3273dc;
+.profile-content {
+  padding: 2rem;
 }
 
-.button.is-warning {
-  background-color: #ffd700;
+.content-card {
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.info-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-content {
+  flex-grow: 1;
+}
+
+.info-content strong {
+  display: block;
   color: #363636;
+  margin-bottom: 0.5rem;
 }
 
-.button.is-warning:hover {
-  background-color: #ffed4a;
+.info-content p {
+  color: #4a4a4a;
+  margin: 0;
 }
 
-.notification.is-warning {
-  background-color: #ffd700;
-  color: #363636;
+.profile-form .field,
+.security-form .field {
+  margin-bottom: 1.5rem;
+}
+
+.button.is-primary {
+  background-color: #3273dc;
+  transition: all 0.3s ease;
+}
+
+.button.is-primary:hover {
+  background-color: #2366d1;
+  transform: translateY(-2px);
+}
+
+.notification.is-danger.is-light {
+  background-color: #feecf0;
+  color: #cc0f35;
+}
+
+@media screen and (max-width: 768px) {
+  .profile-cover {
+    height: auto;
+    padding: 1rem;
+  }
+
+  .profile-header-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .avatar-container {
+    margin-bottom: 1rem;
+  }
+
+  .profile-info {
+    padding-bottom: 1rem;
+  }
+
+  .profile-content {
+    padding: 1rem;
+  }
 }
 </style> 

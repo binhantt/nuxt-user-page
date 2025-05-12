@@ -46,9 +46,7 @@
             Hướng Dẫn
           </NuxtLink>
 
-          <NuxtLink class="navbar-item has-text-dark" to="/cart">
-            Giỏ Hàng
-          </NuxtLink>
+       
 
         </div>
 
@@ -108,7 +106,7 @@
                   </span>
                   <span>Thông tin tài khoản</span>
                 </NuxtLink>
-                <NuxtLink to="/account/orders" class="navbar-item">
+                <NuxtLink to="/cart" class="navbar-item">
                   <span class="icon">
                     <i class="fas fa-shopping-bag"></i>
                   </span>

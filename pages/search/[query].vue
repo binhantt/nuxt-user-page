@@ -30,7 +30,20 @@
                 <div class="card product-card">
                   <div class="card-image">
                     <figure class="image is-4by3">
-                      <img :src="product.main_image_url" :alt="product.name">
+                      <img 
+                        :src="product.main_image_url" 
+                        :alt="product.name"
+                        :class="{ 'is-zoomed': zoomedImage === product.id }"
+                        @click="toggleZoom(product.id)"
+                      >
+                      <button 
+                        class="zoom-button" 
+                        @click.stop="toggleZoom(product.id)"
+                      >
+                        <span class="icon">
+                          <i class="fas" :class="zoomedImage === product.id ? 'fa-search-minus' : 'fa-search-plus'"></i>
+                        </span>
+                      </button>
                     </figure>
                   </div>
                   <div class="card-content">
@@ -66,6 +79,12 @@ import { useSearchStore } from '~/stores/searchStore'
 const route = useRoute()
 const searchStore = useSearchStore()
 const searchQuery = computed(() => route.params.query || '')
+const zoomedImage = ref(null)
+
+// Toggle zoom on image
+const toggleZoom = (productId) => {
+  zoomedImage.value = zoomedImage.value === productId ? null : productId
+}
 
 // Format price
 const formatPrice = (price) => {
@@ -120,12 +139,59 @@ onUnmounted(() => {
   flex-grow: 1;
 }
 
+.card-image {
+  position: relative;
+  overflow: hidden;
+}
+
 .card-image figure {
   padding: 1rem;
+  margin: 0;
+  transition: all 0.3s ease;
 }
 
 .card-image img {
   object-fit: contain;
+  transition: transform 0.3s ease;
+  cursor: zoom-in;
+}
+
+.card-image img.is-zoomed {
+  transform: scale(1.5);
+  cursor: zoom-out;
+}
+
+.zoom-button {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.zoom-button:hover {
+  background: white;
+  transform: scale(1.1);
+}
+
+.zoom-button .icon {
+  color: #3273dc;
+  font-size: 1rem;
+}
+
+/* Hover effect for product card */
+.product-card:hover .zoom-button {
+  opacity: 1;
 }
 
 /* Responsive adjustments */
@@ -133,11 +199,19 @@ onUnmounted(() => {
   .column.is-3 {
     width: 50%;
   }
+  
+  .card-image img.is-zoomed {
+    transform: scale(1.3);
+  }
 }
 
 @media screen and (max-width: 480px) {
   .column.is-3 {
     width: 100%;
+  }
+  
+  .card-image img.is-zoomed {
+    transform: scale(1.2);
   }
 }
 </style> 

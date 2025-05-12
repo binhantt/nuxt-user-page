@@ -7,18 +7,31 @@
           <div class="is-vcentered">
             <div class="">
               <div class="image-gallery">
-                <figure class="image main-image">
-                  <img :src="product.main_image_url" :alt="product.name">
-                </figure>
-                <div class="thumbnails" v-if="product.images && product.images.length">
-                  <figure 
-                    v-for="image in product.images" 
-                    :key="image.id" 
-                    class="image thumbnail"
-                    @click="selectImage(image)"
-                  >
-                    <img :src="image.image_url" :alt="product.name">
-                  </figure>
+                <div class="columns">
+                  <!-- Main Image Column -->
+                  <div class="column is-8">
+                    <figure class="image main-image">
+                      <img 
+                        :src="selectedImage ? selectedImage.image_url : product.main_image_url" 
+                        :alt="product.name"
+                      >
+                    </figure>
+                  </div>
+                  
+                  <!-- Sub Images Column -->
+                  <div class="column is-4">
+                    <div class="sub-images-stack" v-if="product.images && product.images.length">
+                      <figure 
+                        v-for="image in product.images.slice(0, 3)" 
+                        :key="image.id" 
+                        class="image sub-image"
+                        :class="{ 'is-selected': selectedImage?.id === image.id }"
+                        @click="selectImage(image)"
+                      >
+                        <img :src="image.image_url" :alt="product.name">
+                      </figure>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -58,6 +71,7 @@
                     class="button is-warning is-large is-fullwidth mt-5" 
                     :disabled="product.stock <= 0"
                     :class="{'is-loading': isLoading}"
+                    @click="handleBuyProduct"
                   >
                     <span class="icon">
                       <i class="fas fa-shopping-cart"></i>
@@ -274,12 +288,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useProductStore } from '~/stores/productStore'
+import { useOrderStore } from '~/stores/orderStore'
+import { useAuthStore } from '~/stores/authStore'
 
 const route = useRoute()
 const productStore = useProductStore()
+const orderStore = useOrderStore()
+const authStore = useAuthStore()
 const isLoading = ref(false)
 const selectedImage = ref(null)
 
@@ -326,6 +344,62 @@ const formatPrice = (price) => {
 const selectImage = (image) => {
   selectedImage.value = image
   console.log('[Product Detail] Selected image:', image.id)
+}
+
+// Handle buy product
+const handleBuyProduct = async () => {
+  if (!authStore.isLoggedIn) {
+    alert('Vui lòng đăng nhập để mua hàng')
+    await navigateTo('/account/login')
+    return
+  }
+
+  if (!product.value) return
+
+  isLoading.value = true
+  try {
+    // Get user data from localStorage
+    const userData = localStorage.getItem('user')
+    if (!userData) {
+      throw new Error('Không tìm thấy thông tin người dùng')
+    }
+
+    const user = JSON.parse(userData)
+    if (!user.address) {
+      alert('Vui lòng cập nhật địa chỉ giao hàng trong trang cá nhân')
+      await navigateTo(`/account/profile/${user.name}?tab=info`)
+      return
+    }
+
+    // Create order data
+    const orderData = {
+      user_id: user.id,
+      items: [
+        {
+          product_id: product.value.id,
+          quantity: 1,
+          price: product.value.price
+        }
+      ],
+      shipping_address: user.address
+    }
+
+    console.log('[Product Detail] Creating order:', orderData)
+    const result = await orderStore.createOrder(orderData)
+
+    if (result.success) {
+      alert('Đặt hàng thành công!')
+      // Redirect to orders page with correct path
+      await navigateTo(`/account/profile/${user.name}?tab=orders`)
+    } else {
+      alert(result.error || 'Có lỗi xảy ra khi đặt hàng')
+    }
+  } catch (error) {
+    console.error('[Product Detail] Error creating order:', error)
+    alert('Có lỗi xảy ra khi đặt hàng')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 // Fetch products on component mount
@@ -413,21 +487,21 @@ watch(() => route.params.name, async (newName) => {
 .image-gallery {
   position: relative;
   background: white;
-  padding: 1rem;
+  padding: 1.5rem;
   border-radius: 1rem;
   box-shadow: 0 8px 16px rgba(50, 115, 220, 0.1);
 }
 
 .main-image {
-  margin-bottom: 1rem;
   border-radius: 0.5rem;
   overflow: hidden;
+  height: 450px;
 }
 
 .main-image img {
   width: 100%;
-  height: auto;
-  object-fit: cover;
+  height: 100%;
+  object-fit: contain;
   transition: transform 0.3s ease;
 }
 
@@ -435,31 +509,56 @@ watch(() => route.params.name, async (newName) => {
   transform: scale(1.05);
 }
 
-.thumbnails {
+.sub-images-stack {
   display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding: 0.5rem 0;
+  flex-direction: column;
+  gap: 1rem;
+  height: 450px;
+  overflow-y: auto;
 }
 
-.thumbnail {
-  flex: 0 0 80px;
-  height: 80px;
+.sub-image {
+  height: 140px;
   cursor: pointer;
   border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(50, 115, 220, 0.1);
-  transition: transform 0.2s ease;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
 }
 
-.thumbnail:hover {
-  transform: translateY(-2px);
-}
-
-.thumbnail img {
+.sub-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.sub-image:hover {
+  transform: translateX(-4px);
+  box-shadow: 4px 0 8px rgba(50, 115, 220, 0.2);
+}
+
+.sub-image.is-selected {
+  border-color: #3273dc;
+  box-shadow: 0 0 0 2px #3273dc;
+}
+
+/* Custom scrollbar for sub-images */
+.sub-images-stack::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sub-images-stack::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.sub-images-stack::-webkit-scrollbar-thumb {
+  background: #3273dc;
+  border-radius: 3px;
+}
+
+.sub-images-stack::-webkit-scrollbar-thumb:hover {
+  background: #2366d1;
 }
 
 .card {

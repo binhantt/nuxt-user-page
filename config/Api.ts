@@ -35,6 +35,14 @@ export const API_ENDPOINTS = {
     search: `${BASE_URL}/users/products/search`,
     byCategory: (categoryId: string | number) => `${BASE_URL}/products/category/${categoryId}`,
     byPlatform: (platform: string) => `${BASE_URL}/products/platform/${platform}`
+  },
+  // Order endpoints
+  orders: {
+    create: `${BASE_URL}/users/order/creact`,
+    list: `${BASE_URL}/users/orders`,
+    detail: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
+    update: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
+    cancel: (id: string | number) => `${BASE_URL}/users/orders/${id}/cancel`
   }
 }
 
