@@ -42,7 +42,7 @@ export const API_ENDPOINTS = {
     list: `${BASE_URL}/users/orders`,
     detail: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
     update: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
-    cancel: (id: string | number) => `${BASE_URL}/users/orders/${id}/cancel`
+    cancel: (id: string | number) => `${BASE_URL}/users/orders/${id}`
   }
 }
 

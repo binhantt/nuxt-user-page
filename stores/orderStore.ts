@@ -114,13 +114,24 @@ export const useOrderStore = defineStore('order', {
       
       try {
         const response = await fetch(API_ENDPOINTS.orders.cancel(orderId), {
-          method: 'POST'
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ orderId }) // Add order ID to request body if needed
         })
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
         const result = await response.json()
+        
+        // Update local orders list after successful cancellation
+        const orderIndex = this.orders.findIndex(order => order.id === orderId)
+        if (orderIndex !== -1) {
+          this.orders[orderIndex].status = 'cancelled'
+        }
+        
         return { success: true, data: result }
       } catch (error) {
         console.error('[Order Store] Error canceling order:', error)
