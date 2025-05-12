@@ -94,7 +94,7 @@ export const useSearchStore = defineStore('search', {
         
         if (data.success && data.data) {
           // Ensure we have a valid array of categories
-          this.categories = Array.isArray(data.data) ? data.data.map(category => ({
+          this.categories = Array.isArray(data.data) ? data.data.map((category: Category) => ({
             ...category,
             products: Array.isArray(category?.products) ? category.products : []
           })) : []

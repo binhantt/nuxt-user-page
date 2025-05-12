@@ -283,6 +283,35 @@ const productStore = useProductStore()
 const isLoading = ref(false)
 const selectedImage = ref(null)
 
+// Get product data from store
+const product = computed(() => {
+  const products = productStore.getProducts.data
+  console.log('[Product Detail] Available products:', products?.length || 0)
+  console.log('[Product Detail] Current route:', { params: route.params })
+  
+  // Get product by URL-friendly name
+  const urlName = route.params.name || ''
+  console.log('[Product Detail] URL name:', urlName)
+  
+  // Find product by comparing URL-friendly names
+  const foundProduct = products.find(p => formatProductUrl(p.name) === urlName) || null
+  console.log('[Product Detail] Found product:', foundProduct ? foundProduct.name : 'Not found')
+  
+  return foundProduct
+})
+
+// Format product URL for SEO
+const formatProductUrl = (name) => {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 // Format price to VND
 const formatPrice = (price) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -292,22 +321,6 @@ const formatPrice = (price) => {
     maximumFractionDigits: 0
   }).format(price)
 }
-
-// Get product data from store
-const product = computed(() => {
-  const products = productStore.getProducts.data
-  console.log('[Product Detail] Available products:', products?.length || 0)
-  console.log('[Product Detail] Current route:', { params: route.params })
-  
-  // Get product by name
-  const productName = decodeURIComponent(route.params.name)
-  console.log('[Product Detail] Looking for product:', productName)
-  
-  const foundProduct = products.find(p => p.name === productName) || null
-  console.log('[Product Detail] Found product:', foundProduct ? foundProduct.name : 'Not found')
-  
-  return foundProduct
-})
 
 // Handle image selection
 const selectImage = (image) => {
@@ -346,6 +359,9 @@ onMounted(async () => {
 // Watch for route changes to refetch if needed
 watch(() => route.params.name, async (newName) => {
   console.log('[Product Detail] Route changed:', { newName })
+  const decodedName = decodeURIComponent(newName || '')
+  console.log('[Product Detail] Decoded name:', decodedName)
+  
   if (!product.value) {
     console.log('[Product Detail] Product not found on route change, fetching data...')
     isLoading.value = true

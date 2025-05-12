@@ -50,13 +50,6 @@
             Giỏ Hàng
           </NuxtLink>
 
-          <NuxtLink class="navbar-item has-text-dark" to="/payment">
-            Thanh Toán
-          </NuxtLink>
-
-          <NuxtLink class="navbar-item has-text-dark" to="/account">
-            Tài Khoản
-          </NuxtLink>
         </div>
 
         <div class="navbar-end">

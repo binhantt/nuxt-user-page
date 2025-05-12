@@ -36,7 +36,7 @@
             <div class="product-image">
               <img :src="product.main_image_url" :alt="product.name">
               <div class="product-overlay">
-                <NuxtLink :to="`/product/${encodeURIComponent(product.name)}`" class="button is-warning is-rounded">
+                <NuxtLink :to="`/product/${formatProductUrl(product.name)}`" class="button is-warning is-rounded">
                   <span class="icon">
                     <i class="fas fa-eye"></i>
                   </span>
@@ -49,7 +49,7 @@
             </div>
             <div class="product-content">
               <h3 class="title is-5">
-                <NuxtLink :to="`/product/${encodeURIComponent(product.name)}`" class="has-text-dark">
+                <NuxtLink :to="`/product/${formatProductUrl(product.name)}`" class="has-text-dark">
                   {{ product.name }}
                 </NuxtLink>
               </h3>
@@ -130,6 +130,18 @@ const formatPrice = (price) => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(price)
+}
+
+// Format product URL for SEO
+const formatProductUrl = (name) => {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 // Set category and fetch products
