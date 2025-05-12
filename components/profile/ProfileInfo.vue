@@ -68,6 +68,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useChangeInfoStore } from '~/stores/changInforStore'
 
 const props = defineProps({
   userData: {
@@ -81,6 +82,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
+const changeInfoStore = useChangeInfoStore()
 
 const isSubmitting = ref(false)
 const form = reactive({
@@ -98,11 +100,24 @@ onMounted(() => {
 const handleSubmit = async () => {
   isSubmitting.value = true
   try {
-    await emit('update', {
+    const result = await changeInfoStore.updateProfile(props.userData.id, {
       name: form.name,
       phone: form.phone,
       address: form.address
     })
+
+    if (result.success) {
+      emit('update', {
+        name: form.name,
+        phone: form.phone,
+        address: form.address
+      })
+    } else {
+      throw new Error(result.error)
+    }
+  } catch (error) {
+    console.error('Update failed:', error)
+    alert('Cập nhật thông tin thất bại. Vui lòng thử lại.')
   } finally {
     isSubmitting.value = false
   }

@@ -67,6 +67,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '~/stores/userStore'
 import { useAuthStore } from '~/stores/authStore'
 import { useOrderStore } from '~/stores/orderStore'
+import { useChangeInfoStore } from '~/stores/changInforStore'
+import { useChangePasswordStore } from '~/stores/changPasswordStore'
 import { API_ENDPOINTS } from '~/config/Api'
 import type { UserData, Order } from '~/types'
 
@@ -75,6 +77,8 @@ const router = useRouter()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
+const changeInfoStore = useChangeInfoStore()
+const changePasswordStore = useChangePasswordStore()
 
 const isUpdating = ref(false)
 const activeTab = ref('info')
@@ -82,19 +86,31 @@ const userData = ref<UserData | null>(null)
 const orders = ref<Order[]>([])
 const isLoadingOrders = ref(false)
 
+interface PasswordChangeData {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+// Define emits with the correct type
+const emit = defineEmits<{
+  (e: 'update-password', data: PasswordChangeData): void
+}>()
+
 // Check if current user is viewing their own profile
 const isOwnProfile = computed(() => {
   return authStore.isLoggedIn && userData.value?.name === route.params.name
 })
 
-// Initialize user data from localStorage
+// Initialize user data from localStorage and watch for changes
 const initializeUserData = () => {
   try {
     const data = localStorage.getItem('user')
     if (data) {
-      userData.value = JSON.parse(data)
-      console.log('[Profile] User data:', userData.value)
-      return userData.value
+      const parsedData = JSON.parse(data)
+      userData.value = parsedData
+      console.log('[Profile] User data initialized:', parsedData)
+      return parsedData
     }
   } catch (error) {
     console.error('[Profile] Error parsing user data:', error)
@@ -102,14 +118,23 @@ const initializeUserData = () => {
   return null
 }
 
+// Watch for changes in auth store user data
+watch(() => authStore.getUserData, (newData) => {
+  if (newData) {
+    userData.value = newData
+    console.log('[Profile] User data updated from auth store:', newData)
+  }
+}, { deep: true })
+
 // Watch localStorage for changes
 watch(
   () => localStorage.getItem('user'),
   (newData) => {
     if (newData) {
       try {
-        userData.value = JSON.parse(newData)
-        console.log('[Profile] User data updated:', userData.value)
+        const parsedData = JSON.parse(newData)
+        userData.value = parsedData
+        console.log('[Profile] User data updated from localStorage:', parsedData)
       } catch (error) {
         console.error('[Profile] Error parsing user data:', error)
       }
@@ -149,35 +174,50 @@ onMounted(async () => {
 
 // Handle profile update
 const handleUpdateProfile = async (updatedInfo: Partial<UserData>) => {
-  if (!userData.value) return
+  if (!userData.value?.id) return
   
   isUpdating.value = true
   try {
-    // Update local storage
-    const updatedData = {
-      ...userData.value,
-      ...updatedInfo,
-      updated_at: new Date().toISOString()
-    }
-    localStorage.setItem('user', JSON.stringify(updatedData))
-    userData.value = updatedData
+    const result = await changeInfoStore.updateProfile(userData.value.id, updatedInfo)
     
-    alert('Cập nhật thông tin thành công!')
+    if (result.success) {
+      // Updates will be handled automatically through watchers
+      console.log('[Profile] Profile update successful')
+      alert('Cập nhật thông tin thành công!')
+    } else {
+      throw new Error(result.error)
+    }
   } catch (error) {
-    console.error('Update failed:', error)
+    console.error('[Profile] Update failed:', error)
+    alert('Cập nhật thông tin thất bại. Vui lòng thử lại.')
   } finally {
     isUpdating.value = false
   }
 }
 
 // Handle password change
-const handlePasswordChange = async (passwordData: { currentPassword: string; newPassword: string }) => {
+const handlePasswordChange = async (passwordData: PasswordChangeData) => {
+  if (!userData.value?.id) return
+  
   isUpdating.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    alert('Đổi mật khẩu thành công!')
+    const result = await changePasswordStore.updatePassword(userData.value.id, passwordData)
+    
+    if (result.success) {
+      console.log('[Profile] Password update successful')
+      alert('Đổi mật khẩu thành công!')
+    } else {
+      if (result.validationErrors) {
+        // Display validation errors
+        const errorMessage = result.validationErrors.join('\n')
+        alert(errorMessage)
+      } else {
+        throw new Error(result.error)
+      }
+    }
   } catch (error) {
-    console.error('Password change failed:', error)
+    console.error('[Profile] Password update failed:', error)
+    alert('Đổi mật khẩu thất bại. Vui lòng thử lại.')
   } finally {
     isUpdating.value = false
   }
@@ -188,7 +228,26 @@ const uploadAvatar = () => {
   alert('Tính năng đang được phát triển')
 }
 
-// Load orders
+// Handle order cancellation
+const handleCancelOrder = async (orderId: number) => {
+  try {
+    const result = await orderStore.cancelOrder(orderId)
+    if (result.success) {
+      // Orders are already updated in the store
+      console.log('[Profile] Order cancelled successfully:', orderId)
+      // Update the local orders ref to trigger reactivity
+      orders.value = [...orderStore.getAllOrders]
+      alert('Đã hủy đơn hàng thành công')
+    } else {
+      throw new Error(result.error || 'Không thể hủy đơn hàng')
+    }
+  } catch (error) {
+    console.error('[Profile] Error cancelling order:', error)
+    alert('Không thể hủy đơn hàng. Vui lòng thử lại sau.')
+  }
+}
+
+// Load orders with reactive updates
 const loadOrders = async () => {
   if (!userData.value?.id) return
   
@@ -196,9 +255,12 @@ const loadOrders = async () => {
   try {
     const result = await orderStore.getOrders()
     if (result?.success && result.data) {
+      // Update local orders ref
       orders.value = Array.isArray(result.data) ? result.data : 
                     Array.isArray(result.data.data) ? result.data.data :
                     Array.isArray(result.data.orders) ? result.data.orders : []
+      
+      console.log('[Profile] Orders loaded:', orders.value.length)
     }
   } catch (error) {
     console.error('[Profile] Error loading orders:', error)
@@ -207,6 +269,16 @@ const loadOrders = async () => {
     isLoadingOrders.value = false
   }
 }
+
+// Watch for changes in the order store
+watch(
+  () => orderStore.getAllOrders,
+  (newOrders) => {
+    console.log('[Profile] Orders updated in store:', newOrders.length)
+    orders.value = [...newOrders]
+  },
+  { deep: true }
+)
 
 // Watch for tab changes
 watch(activeTab, (newTab) => {
@@ -222,24 +294,6 @@ onMounted(() => {
     activeTab.value = tab
   }
 })
-
-// Update the handleCancelOrder function
-const handleCancelOrder = async (orderId: number) => {
-  try {
-    const result = await orderStore.cancelOrder(orderId)
-    console.log(orderStore.cancelOrder(orderId) )
-    if (result.success) {
-      // Reload orders to get fresh data
-      await loadOrders()
-      alert('Đã hủy đơn hàng thành công')
-    } else {
-      throw new Error(result.error || 'Không thể hủy đơn hàng')
-    }
-  } catch (error) {
-    console.error('[Profile] Error cancelling order:', error)
-    alert('Không thể hủy đơn hàng. Vui lòng thử lại sau.')
-  }
-}
 </script>
 
 <style scoped>

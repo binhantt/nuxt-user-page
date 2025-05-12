@@ -106,12 +106,7 @@
                   </span>
                   <span>Thông tin tài khoản</span>
                 </NuxtLink>
-                <NuxtLink to="/cart" class="navbar-item">
-                  <span class="icon">
-                    <i class="fas fa-shopping-bag"></i>
-                  </span>
-                  <span>Đơn hàng của tôi</span>
-                </NuxtLink>
+              
                 <hr class="navbar-divider">
                 <div class="navbar-item">
                   <span class="icon">

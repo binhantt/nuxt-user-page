@@ -118,7 +118,7 @@ export const useOrderStore = defineStore('order', {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ orderId }) // Add order ID to request body if needed
+          body: JSON.stringify({ orderId })
         })
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -126,10 +126,20 @@ export const useOrderStore = defineStore('order', {
 
         const result = await response.json()
         
-        // Update local orders list after successful cancellation
-        const orderIndex = this.orders.findIndex(order => order.id === orderId)
-        if (orderIndex !== -1) {
-          this.orders[orderIndex].status = 'cancelled'
+        // Immediately update the local state
+        this.orders = this.orders.map(order => 
+          order.id === orderId 
+            ? { ...order, status: 'cancelled', updated_at: new Date().toISOString() }
+            : order
+        )
+        
+        // If this is the current order, update it too
+        if (this.currentOrder?.id === orderId) {
+          this.currentOrder = {
+            ...this.currentOrder,
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          }
         }
         
         return { success: true, data: result }
@@ -148,6 +158,7 @@ export const useOrderStore = defineStore('order', {
     hasError: (state) => state.error !== null,
     getError: (state) => state.error,
     getAllOrders: (state) => state.orders,
-    getCurrentOrder: (state) => state.currentOrder
+    getCurrentOrder: (state) => state.currentOrder,
+    getOrderById: (state) => (id: number) => state.orders.find(order => order.id === id)
   }
 }) 

@@ -12,6 +12,7 @@
               class="input"
               required
               placeholder="Nhập mật khẩu hiện tại"
+              :class="{ 'is-danger': errors.currentPassword }"
             >
             <span class="icon is-small is-left">
               <i class="fas fa-lock"></i>
@@ -26,6 +27,7 @@
               </span>
             </button>
           </div>
+          <p v-if="errors.currentPassword" class="help is-danger">{{ errors.currentPassword }}</p>
         </div>
 
         <div class="field">
@@ -37,6 +39,7 @@
               class="input"
               required
               placeholder="Nhập mật khẩu mới"
+              :class="{ 'is-danger': errors.newPassword }"
               pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$"
               title="Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ và số"
             >
@@ -53,7 +56,7 @@
               </span>
             </button>
           </div>
-          <p class="help">Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ và số</p>
+          <p v-if="errors.newPassword" class="help is-danger">{{ errors.newPassword }}</p>
         </div>
 
         <div class="field">
@@ -65,6 +68,7 @@
               class="input"
               required
               placeholder="Nhập lại mật khẩu mới"
+              :class="{ 'is-danger': errors.confirmPassword }"
             >
             <span class="icon is-small is-left">
               <i class="fas fa-key"></i>
@@ -79,6 +83,7 @@
               </span>
             </button>
           </div>
+          <p v-if="errors.confirmPassword" class="help is-danger">{{ errors.confirmPassword }}</p>
         </div>
 
         <div v-if="error" class="notification is-danger is-light">
@@ -117,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import type { UserData } from '~/types'
 
 const props = defineProps<{
@@ -139,6 +144,12 @@ const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
 const isSubmitting = ref(false)
 const error = ref('')
+
+const errors = reactive({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
 
 const isFormValid = computed(() => {
   return (
@@ -218,5 +229,18 @@ const formatDate = (date: string) => {
 .help {
   font-size: 0.85rem;
   color: #666;
+}
+
+.help.is-danger {
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.button.is-warning {
+  margin-top: 1rem;
+}
+
+.button.is-warning:disabled {
+  opacity: 0.7;
 }
 </style> 

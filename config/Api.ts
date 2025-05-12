@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
     login: `${BASE_URL}/users/login`,
     register: `${BASE_URL}/users/register`,
     logout: `${BASE_URL}/users/logout`,
-    profile: `${BASE_URL}/users/profile`
+    profile: `${BASE_URL}/users/`
   },
   // Captcha endpoints
   captcha: {
