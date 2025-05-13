@@ -11,6 +11,12 @@
               {{ authStore.getError }}
             </div>
 
+            <!-- Account Status Message -->
+            <div v-if="accountStatus.show" :class="['notification', accountStatus.type]">
+              <button class="delete" @click="accountStatus.show = false"></button>
+              {{ accountStatus.message }}
+            </div>
+
             <form @submit.prevent="handleLogin">
               <!-- Email Field -->
               <div class="field">
@@ -98,6 +104,13 @@ const isLoading = ref(false)
 const authStore = useAuthStore()
 const userStore = useUserStore()
 
+// Account status notification
+const accountStatus = reactive({
+  show: false,
+  type: 'is-danger',
+  message: ''
+})
+
 // Handle login form submission
 const handleLogin = async () => {
   if (!email.value || !password.value) {
@@ -107,39 +120,31 @@ const handleLogin = async () => {
 
   try {
     isLoading.value = true
+    accountStatus.show = false
     console.log('[Login] Attempting login with:', { email: email.value })
     
-    const success = await authStore.login(email.value, password.value)
-    console.log('[Login] Auth result:', { success, token: authStore.getToken })
+    const loginResponse = await authStore.login(email.value, password.value)
+    console.log('[Login] Auth result:', loginResponse)
     
-    if (success) {
-      console.log('[Login] Auth successful, fetching profile...')
-      const profileData = await userStore.fetchProfile()
-      console.log('[Login] Profile fetched:', profileData)
-
-      if (profileData) {
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(profileData))
-        console.log('[Login] User data stored in localStorage')
-        
-        // Clear form
-        email.value = ''
-        password.value = ''
-        showPassword.value = false
-        
-        // Navigate to home page
-        navigateTo('/')
-      } else {
-        console.error('[Login] Failed to fetch profile data')
-        throw new Error('Không thể tải thông tin người dùng')
-      }
-    } else {
-      console.error('[Login] Auth failed:', authStore.getError)
-      throw new Error(authStore.getError || 'Đăng nhập thất bại')
+    if (loginResponse && loginResponse.user) {
+      // Clear form
+      email.value = ''
+      password.value = ''
+      showPassword.value = false
+      
+      // Navigate to home page
+      navigateTo('/')
     }
   } catch (error) {
     console.error('[Login] Error:', error)
     authStore.setError(error.message)
+    
+    // Show account status message if account is locked
+    if (error.message.includes('đã bị khóa')) {
+      accountStatus.show = true
+      accountStatus.type = 'is-danger'
+      accountStatus.message = error.message
+    }
   } finally {
     isLoading.value = false
   }
@@ -150,6 +155,7 @@ onMounted(() => {
   console.log('[Login] Page mounted, clearing previous state')
   authStore.clearError()
   userStore.clearProfile()
+  accountStatus.show = false
   
   // Clear stored data if not logged in
   if (!authStore.isLoggedIn) {
@@ -163,6 +169,7 @@ onUnmounted(() => {
   email.value = ''
   password.value = ''
   showPassword.value = false
+  accountStatus.show = false
 })
 </script>
 
@@ -185,5 +192,16 @@ onUnmounted(() => {
 
 .button.is-loading::after {
   border-color: transparent transparent #fff #fff !important;
+}
+
+.notification {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.notification .delete {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
 }
 </style> 

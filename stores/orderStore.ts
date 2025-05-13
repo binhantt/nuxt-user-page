@@ -18,6 +18,7 @@ interface OrderState {
   currentOrder: any | null
   loading: boolean
   error: string | null
+  optimisticUpdates: Map<number, { status: string; previousStatus: string }>
 }
 
 export const useOrderStore = defineStore('order', {
@@ -25,7 +26,8 @@ export const useOrderStore = defineStore('order', {
     orders: [],
     currentOrder: null,
     loading: false,
-    error: null
+    error: null,
+    optimisticUpdates: new Map()
   }),
 
   actions: {
@@ -109,10 +111,34 @@ export const useOrderStore = defineStore('order', {
     },
 
     async cancelOrder(orderId: number) {
-      this.loading = true
       this.error = null
       
+      // Store the current status before optimistic update
+      const orderToUpdate = this.orders.find(order => order.id === orderId)
+      if (!orderToUpdate) {
+        return {
+          success: false,
+          error: 'Order not found'
+        }
+      }
+
+      const previousStatus = orderToUpdate.status
+
       try {
+        // Optimistically update the order status
+        this.optimisticUpdates.set(orderId, {
+          status: 'cancelled',
+          previousStatus
+        })
+        
+        // Update the orders list optimistically
+        this.orders = this.orders.map(order => 
+          order.id === orderId 
+            ? { ...order, status: 'cancelled', updated_at: new Date().toISOString() }
+            : order
+        )
+
+        // Make the API call
         const response = await fetch(API_ENDPOINTS.orders.cancel(orderId), {
           method: 'DELETE',
           headers: {
@@ -120,35 +146,33 @@ export const useOrderStore = defineStore('order', {
           },
           body: JSON.stringify({ orderId })
         })
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
         const result = await response.json()
         
-        // Immediately update the local state
-        this.orders = this.orders.map(order => 
-          order.id === orderId 
-            ? { ...order, status: 'cancelled', updated_at: new Date().toISOString() }
-            : order
-        )
-        
-        // If this is the current order, update it too
-        if (this.currentOrder?.id === orderId) {
-          this.currentOrder = {
-            ...this.currentOrder,
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
-          }
-        }
+        // Clear the optimistic update on success
+        this.optimisticUpdates.delete(orderId)
         
         return { success: true, data: result }
       } catch (error) {
         console.error('[Order Store] Error canceling order:', error)
+        
+        // Revert the optimistic update on failure
+        if (this.optimisticUpdates.has(orderId)) {
+          const { previousStatus } = this.optimisticUpdates.get(orderId)!
+          this.orders = this.orders.map(order => 
+            order.id === orderId 
+              ? { ...order, status: previousStatus }
+              : order
+          )
+          this.optimisticUpdates.delete(orderId)
+        }
+        
         this.error = error instanceof Error ? error.message : 'Có lỗi xảy ra khi hủy đơn hàng'
         return { success: false, error: this.error }
-      } finally {
-        this.loading = false
       }
     }
   },
@@ -159,6 +183,7 @@ export const useOrderStore = defineStore('order', {
     getError: (state) => state.error,
     getAllOrders: (state) => state.orders,
     getCurrentOrder: (state) => state.currentOrder,
-    getOrderById: (state) => (id: number) => state.orders.find(order => order.id === id)
+    getOrderById: (state) => (id: number) => state.orders.find(order => order.id === id),
+    isOptimisticallyUpdating: (state) => (orderId: number) => state.optimisticUpdates.has(orderId)
   }
 }) 

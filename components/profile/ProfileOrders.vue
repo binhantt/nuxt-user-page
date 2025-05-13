@@ -56,8 +56,15 @@
         </div>
 
         <footer v-if="order.status === 'pending'" class="card-footer">
-          <a class="card-footer-item has-text-danger" @click="$emit('cancel-order', order.id)">
-            Hủy đơn hàng
+          <a 
+            class="card-footer-item has-text-danger" 
+            :class="{ 'is-loading': cancellingOrders[order.id] }"
+            @click="handleCancelOrder(order.id)"
+          >
+            <span class="icon">
+              <i class="fas fa-times"></i>
+            </span>
+            <span>Hủy đơn hàng</span>
           </a>
         </footer>
       </div>
@@ -66,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, reactive } from 'vue'
 import type { Order } from '~/types'
 
 const props = defineProps<{
@@ -73,9 +81,24 @@ const props = defineProps<{
   isLoading: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'cancel-order', orderId: number): void
 }>()
+
+// Track cancelling state for each order
+const cancellingOrders = reactive<Record<number, boolean>>({})
+
+// Handle order cancellation with loading state
+const handleCancelOrder = async (orderId: number) => {
+  if (cancellingOrders[orderId]) return // Prevent double-clicks
+  
+  cancellingOrders[orderId] = true
+  try {
+    await emit('cancel-order', orderId)
+  } finally {
+    cancellingOrders[orderId] = false
+  }
+}
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('vi-VN')
@@ -163,5 +186,41 @@ const getStatusText = (status: string) => {
 
 .order-total strong {
   margin-right: 0.5rem;
+}
+
+.card-footer-item {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.card-footer-item:hover {
+  background-color: #fff5f5;
+}
+
+.card-footer-item.is-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.card-footer-item.is-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1em;
+  height: 1em;
+  border: 2px solid #f14668;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinAround 500ms infinite linear;
+}
+
+@keyframes spinAround {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 </style> 

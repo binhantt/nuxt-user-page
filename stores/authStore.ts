@@ -67,6 +67,11 @@ export const useAuthStore = defineStore('auth', {
           throw new Error(data.message || 'Đăng nhập thất bại')
         }
 
+        // Check if account is active
+        if (data.data.user.is_active !== 1) {
+          throw new Error('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.')
+        }
+
         // Store tokens and user data
         this.token = data.data.token
         this.refreshToken = data.data.refreshToken
@@ -80,7 +85,7 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem('user', JSON.stringify(data.data.user))
         
         console.log('[AuthStore] Login successful, data stored')
-        return true
+        return data.data
       } catch (err) {
         console.error('[AuthStore] Login error:', err)
         this.error = err instanceof Error ? err.message : 'Có lỗi xảy ra khi đăng nhập'

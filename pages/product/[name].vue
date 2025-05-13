@@ -9,7 +9,7 @@
               <div class="image-gallery">
                 <div class="columns">
                   <!-- Main Image Column -->
-                  <div class="column is-8">
+                  <div class="column" :class="{'is-8': product.images?.length > 0, 'is-12': !product.images?.length}">
                     <figure class="image main-image">
                       <img 
                         :src="selectedImage ? selectedImage.image_url : product.main_image_url" 
@@ -19,8 +19,8 @@
                   </div>
                   
                   <!-- Sub Images Column -->
-                  <div class="column is-4">
-                    <div class="sub-images-stack" v-if="product.images && product.images.length">
+                  <div v-if="product.images?.length" class="column is-4">
+                    <div class="sub-images-stack">
                       <figure 
                         v-for="image in product.images.slice(0, 3)" 
                         :key="image.id" 
@@ -39,10 +39,10 @@
             <div class="py-2">
               <div class="product-info">
                 <h1 class="title is-2 has-text-primary">{{ product.name }}</h1>
-                <p class="subtitle is-4 has-text-grey">{{ product.description }}</p>
+                <p v-if="product.description" class="subtitle is-4 has-text-grey">{{ product.description }}</p>
                 
-                <div class="tags are-medium mb-4">
-                  <span v-if="product.category" class="tag is-primary is-light">
+                <div v-if="product.category" class="tags are-medium mb-4">
+                  <span class="tag is-primary is-light">
                     <span class="icon">
                       <i class="fas fa-tag"></i>
                     </span>
@@ -65,25 +65,49 @@
                       </span>
                       <span>Còn {{ product.stock }} sản phẩm</span>
                     </span>
+                    <span 
+                      class="tag is-medium ml-2" 
+                      :class="product.is_active === 1 ? 'is-success is-light' : 'is-danger is-light'"
+                    >
+                      <span class="icon">
+                        <i class="fas" :class="product.is_active === 1 ? 'fa-check' : 'fa-ban'"></i>
+                      </span>
+                      <span>{{ product.is_active === 1 ? 'Đang bán' : 'Ngừng bán' }}</span>
+                    </span>
                   </div>
 
-                  <button 
-                    class="button is-warning is-large is-fullwidth mt-5" 
-                    :disabled="product.stock <= 0"
-                    :class="{'is-loading': isLoading}"
-                    @click="handleBuyProduct"
-                  >
-                    <span class="icon">
-                      <i class="fas fa-shopping-cart"></i>
-                    </span>
-                    <span>{{ product.stock > 0 ? 'Mua Ngay' : 'Hết Hàng' }}</span>
-                  </button>
+                  <div class="buttons mt-5">
+                    <button 
+                      class="button is-warning is-large" 
+                      :disabled="product.stock <= 0 || product.is_active !== 1"
+                      :class="{'is-loading': isLoading}"
+                      @click="handleBuyProduct"
+                    >
+                      <span class="icon">
+                        <i class="fas fa-shopping-cart"></i>
+                      </span>
+                      <span>{{ 
+                        product.is_active !== 1 ? 'Ngừng bán' :
+                        product.stock > 0 ? 'Mua Ngay' : 'Hết Hàng' 
+                      }}</span>
+                    </button>
+
+                    <button 
+                      v-if="isAdmin"
+                      class="button is-large"
+                      :class="product.is_active === 1 ? 'is-danger' : 'is-success'"
+                      :disabled="isUpdating"
+                      @click="handleToggleProductStatus"
+                    >
+                      <span class="icon">
+                        <i class="fas" :class="product.is_active === 1 ? 'fa-ban' : 'fa-check'"></i>
+                      </span>
+                      <span>{{ product.is_active === 1 ? 'Ngừng bán' : 'Mở bán lại' }}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <!-- Product Images -->
-           
           </div>
         </div>
       </div>
@@ -97,7 +121,7 @@
           <div class="column is-8">
             <div class="content">
               <!-- Technical Specifications -->
-              <div class="specs-section card">
+              <div v-if="product.details?.length" class="specs-section card">
                 <header class="card-header">
                   <p class="card-header-title">
                     <span class="icon-text">
@@ -109,7 +133,7 @@
                   </p>
                 </header>
                 <div class="card-content">
-                  <div class="specs-table" v-if="product.details && product.details.length">
+                  <div class="specs-table">
                     <div v-for="detail in product.details" :key="detail.id" class="spec-item">
                       <strong>{{ detail.spec_name }}:</strong>
                       <span>{{ detail.spec_value }}</span>
@@ -119,7 +143,7 @@
               </div>
 
               <!-- Warranty Information -->
-              <div class="warranty-section card mt-6">
+              <div v-if="product.warranties?.length" class="warranty-section card mt-6">
                 <header class="card-header">
                   <p class="card-header-title">
                     <span class="icon-text">
@@ -131,16 +155,16 @@
                   </p>
                 </header>
                 <div class="card-content">
-                  <div class="warranty-info" v-if="product.warranties && product.warranties.length">
+                  <div class="warranty-info">
                     <div v-for="warranty in product.warranties" :key="warranty.id" class="warranty-item">
                       <div class="warranty-detail">
                         <span class="icon has-text-primary">
                           <i class="fas fa-check-circle"></i>
                         </span>
                         <div>
-                          <p><strong>Thời gian bảo hành:</strong> {{ warranty.warranty_period }} tháng</p>
-                          <p><strong>Nhà cung cấp:</strong> {{ warranty.warranty_provider }}</p>
-                          <p><strong>Điều kiện:</strong> {{ warranty.warranty_conditions }}</p>
+                          <p v-if="warranty.warranty_period"><strong>Thời gian bảo hành:</strong> {{ warranty.warranty_period }} tháng</p>
+                          <p v-if="warranty.warranty_provider"><strong>Nhà cung cấp:</strong> {{ warranty.warranty_provider }}</p>
+                          <p v-if="warranty.warranty_conditions"><strong>Điều kiện:</strong> {{ warranty.warranty_conditions }}</p>
                         </div>
                       </div>
                     </div>
@@ -162,7 +186,7 @@
                 </header>
                 <div class="card-content">
                   <div class="columns is-multiline">
-                    <div class="column is-6">
+                    <div v-if="product.sku" class="column is-6">
                       <div class="info-item">
                         <span class="icon has-text-grey">
                           <i class="fas fa-barcode"></i>
@@ -173,7 +197,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="column is-6">
+                    <div v-if="product.weight" class="column is-6">
                       <div class="info-item">
                         <span class="icon has-text-grey">
                           <i class="fas fa-weight"></i>
@@ -184,7 +208,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="column is-6">
+                    <div v-if="product.dimensions" class="column is-6">
                       <div class="info-item">
                         <span class="icon has-text-grey">
                           <i class="fas fa-ruler-combined"></i>
@@ -299,7 +323,16 @@ const productStore = useProductStore()
 const orderStore = useOrderStore()
 const authStore = useAuthStore()
 const isLoading = ref(false)
+const isUpdating = ref(false)
 const selectedImage = ref(null)
+
+// Check if user is admin
+const isAdmin = computed(() => {
+  const userData = localStorage.getItem('user')
+  if (!userData) return false
+  const user = JSON.parse(userData)
+  return user.role === 'admin' // Adjust based on your role system
+})
 
 // Get product data from store
 const product = computed(() => {
@@ -365,6 +398,14 @@ const handleBuyProduct = async () => {
     }
 
     const user = JSON.parse(userData)
+    
+    // Check if user account is active
+    if (user.is_active !== 1) {
+      alert('Tài khoản của bạn đã bị khóa. Không thể thực hiện giao dịch.')
+      await navigateTo('/account/login')
+      return
+    }
+
     if (!user.address) {
       alert('Vui lòng cập nhật địa chỉ giao hàng trong trang cá nhân')
       await navigateTo(`/account/profile/${user.name}?tab=info`)
@@ -399,6 +440,40 @@ const handleBuyProduct = async () => {
     alert('Có lỗi xảy ra khi đặt hàng')
   } finally {
     isLoading.value = false
+  }
+}
+
+// Handle product status toggle
+const handleToggleProductStatus = async () => {
+  if (!product.value?.id) return
+  
+  const action = product.value.is_active === 1 ? 'ngừng bán' : 'mở bán lại'
+  const confirmed = confirm(`Bạn có chắc chắn muốn ${action} sản phẩm này?`)
+  
+  if (!confirmed) return
+  
+  isUpdating.value = true
+  try {
+    const result = await productStore.toggleProductStatus(
+      product.value.id,
+      product.value.is_active
+    )
+    
+    if (result.success) {
+      // Update the local product data
+      product.value = {
+        ...product.value,
+        is_active: product.value.is_active === 1 ? 0 : 1
+      }
+      alert(`Đã ${action} sản phẩm thành công!`)
+    } else {
+      throw new Error(result.error)
+    }
+  } catch (error) {
+    console.error('[Product Detail] Error toggling product status:', error)
+    alert(`Không thể ${action} sản phẩm. Vui lòng thử lại.`)
+  } finally {
+    isUpdating.value = false
   }
 }
 

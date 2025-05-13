@@ -204,14 +204,22 @@ export const useProductStore = defineStore('product', {
         if (index !== -1) {
           this.products.data[index] = updatedProduct
         }
-        return updatedProduct
+        return { success: true, data: updatedProduct }
       } catch (error) {
         this.error = error instanceof Error ? error.message : 'Đã xảy ra lỗi'
         console.error('[ProductStore] Error updating product:', error)
-        return null
+        return { success: false, error: this.error }
       } finally {
         this.loading = false
       }
+    },
+
+    // Toggle product active status
+    async toggleProductStatus(id: number, currentStatus: number) {
+      console.log('[ProductStore] Toggling product status:', { id, currentStatus })
+      return await this.updateProduct(id, {
+        is_active: currentStatus === 1 ? 0 : 1
+      })
     },
 
     // Delete product

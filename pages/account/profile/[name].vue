@@ -42,6 +42,45 @@
                 :user="userData"
                 @update-password="handlePasswordChange"
               />
+
+              <!-- Account Status Section -->
+              <div v-if="activeTab === 'security' && isOwnProfile" class="mt-6">
+                <div class="box">
+                  <h3 class="title is-5">Trạng thái tài khoản</h3>
+                  <div class="content">
+                    <div class="level">
+                      <div class="level-left">
+                        <div class="level-item">
+                          <span class="tag is-medium" :class="userData?.is_active === 1 ? 'is-success' : 'is-danger'">
+                            {{ userData?.is_active === 1 ? 'Đang hoạt động' : 'Đã ngừng hoạt động' }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="level-right">
+                        <div class="level-item">
+                          <button 
+                            class="button is-danger"
+                            :class="{ 'is-loading': isUpdating }"
+                            @click="handleDeactivateAccount"
+                            :disabled="isUpdating"
+                          >
+                            <span class="icon">
+                              <i class="fas fa-ban"></i>
+                            </span>
+                            <span>{{ userData?.is_active === 1 ? 'Ngừng hoạt động' : 'Kích hoạt lại' }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="help">
+                      {{ userData?.is_active === 1 
+                        ? 'Khi ngừng hoạt động, bạn sẽ không thể thực hiện các giao dịch mua hàng.' 
+                        : 'Kích hoạt lại tài khoản để tiếp tục mua hàng.' 
+                      }}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -294,6 +333,41 @@ onMounted(() => {
     activeTab.value = tab
   }
 })
+
+// Add new function for handling account deactivation
+const handleDeactivateAccount = async () => {
+  if (!userData.value?.id) return
+  
+  const action = userData.value.is_active === 1 ? 'ngừng hoạt động' : 'kích hoạt lại'
+  const confirmed = confirm(`Bạn có chắc chắn muốn ${action} tài khoản không?`)
+  
+  if (!confirmed) return
+  
+  isUpdating.value = true
+  try {
+    const result = await changeInfoStore.updateProfile(userData.value.id, {
+      is_active: userData.value.is_active === 1 ? 0 : 1
+    })
+    
+    if (result.success) {
+      console.log('[Profile] Account status updated successfully')
+      alert(`${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công!`)
+      
+      if (userData.value.is_active === 1) {
+        // If deactivating, log out the user
+        await authStore.logout()
+        await navigateTo('/account/login')
+      }
+    } else {
+      throw new Error(result.error)
+    }
+  } catch (error) {
+    console.error('[Profile] Error updating account status:', error)
+    alert(`Không thể ${action} tài khoản. Vui lòng thử lại.`)
+  } finally {
+    isUpdating.value = false
+  }
+}
 </script>
 
 <style scoped>
