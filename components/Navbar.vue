@@ -3,7 +3,7 @@
     <div class="container">
       <div class="navbar-brand">
         <NuxtLink class="navbar-item has-text-primary" to="/">
-          <span class="has-text-weight-bold is-size-4">TEMPLATESHOP</span>
+          <span class="has-text-weight-bold is-size-4">Shop_247</span>
         </NuxtLink>
 
         <a role="button" class="navbar-burger has-text-dark" aria-label="menu" aria-expanded="false" @click="isMenuActive = !isMenuActive">

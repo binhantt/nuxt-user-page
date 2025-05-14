@@ -4,7 +4,7 @@
       <div class="columns">
         <!-- Company Info -->
         <div class="column is-4">
-          <h3 class="title is-4 has-text-primary">TEMPLATESHOP</h3>
+          <h3 class="title is-4 has-text-primary">Shop 247</h3>
           <p class="mb-4">
             Cung cấp giải pháp template chuyên nghiệp cho các sàn thương mại điện tử hàng đầu Việt Nam
           </p>
