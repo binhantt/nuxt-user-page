@@ -267,25 +267,6 @@ const uploadAvatar = () => {
   alert('Tính năng đang được phát triển')
 }
 
-// Handle order cancellation
-const handleCancelOrder = async (orderId: number) => {
-  try {
-    const result = await orderStore.cancelOrder(orderId)
-    if (result.success) {
-      // Orders are already updated in the store
-      console.log('[Profile] Order cancelled successfully:', orderId)
-      // Update the local orders ref to trigger reactivity
-      orders.value = [...orderStore.getAllOrders]
-      alert('Đã hủy đơn hàng thành công')
-    } else {
-      throw new Error(result.error || 'Không thể hủy đơn hàng')
-    }
-  } catch (error) {
-    console.error('[Profile] Error cancelling order:', error)
-    alert('Không thể hủy đơn hàng. Vui lòng thử lại sau.')
-  }
-}
-
 // Load orders with reactive updates
 const loadOrders = async () => {
   if (!userData.value?.id) return
@@ -294,11 +275,7 @@ const loadOrders = async () => {
   try {
     const result = await orderStore.getOrders()
     if (result?.success && result.data) {
-      // Update local orders ref
-      orders.value = Array.isArray(result.data) ? result.data : 
-                    Array.isArray(result.data.data) ? result.data.data :
-                    Array.isArray(result.data.orders) ? result.data.orders : []
-      
+      orders.value = Array.isArray(result.data) ? result.data : []
       console.log('[Profile] Orders loaded:', orders.value.length)
     }
   } catch (error) {
@@ -309,12 +286,34 @@ const loadOrders = async () => {
   }
 }
 
+// Handle order cancellation
+const handleCancelOrder = async (orderId: number) => {
+  try {
+    const result = await orderStore.cancelOrder(orderId)
+    if (result.success) {
+      // Reload orders after successful cancellation
+      await loadOrders()
+      alert('Đã hủy đơn hàng thành công')
+    } else {
+      throw new Error(result.error || 'Không thể hủy đơn hàng')
+    }
+  } catch (error) {
+    console.error('[Profile] Error cancelling order:', error)
+    alert('Không thể hủy đơn hàng. Vui lòng thử lại sau.')
+  }
+}
+
 // Watch for changes in the order store
 watch(
   () => orderStore.getAllOrders,
   (newOrders) => {
-    console.log('[Profile] Orders updated in store:', newOrders.length)
-    orders.value = [...newOrders]
+    if (Array.isArray(newOrders)) {
+      console.log('[Profile] Orders updated in store:', newOrders.length)
+      orders.value = [...newOrders]
+    } else {
+      console.warn('[Profile] Invalid orders data:', newOrders)
+      orders.value = []
+    }
   },
   { deep: true }
 )

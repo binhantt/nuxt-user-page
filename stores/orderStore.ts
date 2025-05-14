@@ -19,6 +19,7 @@ interface OrderState {
   loading: boolean
   error: string | null
   optimisticUpdates: Map<number, { status: string; previousStatus: string }>
+  cancelDeadlines: Map<number, { canCancel: boolean; deadline: string }>
 }
 
 export const useOrderStore = defineStore('order', {
@@ -27,7 +28,8 @@ export const useOrderStore = defineStore('order', {
     currentOrder: null,
     loading: false,
     error: null,
-    optimisticUpdates: new Map()
+    optimisticUpdates: new Map(),
+    cancelDeadlines: new Map()
   }),
 
   actions: {
@@ -66,19 +68,30 @@ export const useOrderStore = defineStore('order', {
       }
     },
 
-    async getOrders() {
+    async getOrders(userId: number) {
       this.loading = true
       this.error = null
       
       try {
-        const response = await fetch(API_ENDPOINTS.orders.list)
+        const response = await fetch(API_ENDPOINTS.orders.list(userId), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        // Add debug logging
+        console.log('[Order Store] Fetching orders for user:', userId);
+        console.log('[Order Store] API Endpoint:', API_ENDPOINTS.orders.list(userId));
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
         const result = await response.json()
-        this.orders = result
-        return { success: true, data: result }
+        // Ensure orders is always an array
+        this.orders = Array.isArray(result.data) ? result.data : 
+                     Array.isArray(result) ? result : []
+        return { success: true, data: this.orders }
       } catch (error) {
         console.error('[Order Store] Error fetching orders:', error)
         this.error = error instanceof Error ? error.message : 'Có lỗi xảy ra khi lấy danh sách đơn hàng'
@@ -91,7 +104,7 @@ export const useOrderStore = defineStore('order', {
     async getOrderDetail(orderId: number) {
       this.loading = true
       this.error = null
-      
+    
       try {
         const response = await fetch(API_ENDPOINTS.orders.detail(orderId))
         if (!response.ok) {
@@ -110,10 +123,42 @@ export const useOrderStore = defineStore('order', {
       }
     },
 
+    async checkCancelEligibility(orderId: number) {
+      try {
+        const response = await fetch(API_ENDPOINTS.orders.checkCancelEligibility(orderId), 
+        {
+          method : "DELETE",
+         
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const result = await response.json()
+        this.cancelDeadlines.set(orderId, {
+          canCancel: result.canCancel,
+          deadline: result.deadline
+        })
+        return result
+      } catch (error) {
+        console.error('[Order Store] Error checking cancel eligibility:', error)
+        return { canCancel: false, deadline: null }
+      }
+    },
+
     async cancelOrder(orderId: number) {
       this.error = null
       
-      // Store the current status before optimistic update
+      // Ensure orders is an array before using find
+      if (!Array.isArray(this.orders)) {
+        console.error('[Order Store] Orders is not an array:', this.orders)
+        this.orders = []
+        return {
+          success: false,
+          error: 'Invalid orders data'
+        }
+      }
+
       const orderToUpdate = this.orders.find(order => order.id === orderId)
       if (!orderToUpdate) {
         return {
@@ -142,9 +187,9 @@ export const useOrderStore = defineStore('order', {
         const response = await fetch(API_ENDPOINTS.orders.cancel(orderId), {
           method: 'DELETE',
           headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ orderId })
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
         })
 
         if (!response.ok) {
@@ -184,6 +229,16 @@ export const useOrderStore = defineStore('order', {
     getAllOrders: (state) => state.orders,
     getCurrentOrder: (state) => state.currentOrder,
     getOrderById: (state) => (id: number) => state.orders.find(order => order.id === id),
-    isOptimisticallyUpdating: (state) => (orderId: number) => state.optimisticUpdates.has(orderId)
+    isOptimisticallyUpdating: (state) => (orderId: number) => state.optimisticUpdates.has(orderId),
+    canCancelOrder: (state) => (orderId: number) => {
+      const deadlineInfo = state.cancelDeadlines.get(orderId)
+      if (!deadlineInfo) return false
+      return deadlineInfo.canCancel
+    },
+    
+    getCancelDeadline: (state) => (orderId: number) => {
+      const deadlineInfo = state.cancelDeadlines.get(orderId)
+      return deadlineInfo?.deadline || null
+    }
   }
-}) 
+})

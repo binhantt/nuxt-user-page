@@ -39,10 +39,12 @@ export const API_ENDPOINTS = {
   // Order endpoints
   orders: {
     create: `${BASE_URL}/users/order/creact`,
-    list: `${BASE_URL}/users/orders`,
+    list: (userId: number) => `${BASE_URL}/users/${userId}/orders`,
     detail: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
     update: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
-    cancel: (id: string | number) => `${BASE_URL}/users/orders/${id}`
+    cancel: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
+    cancelDeadline: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
+    checkCancelEligibility: (id: string | number) => `${BASE_URL}/users/orders/${id}`
   }
 }
 

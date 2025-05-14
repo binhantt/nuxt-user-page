@@ -1,12 +1,22 @@
 <template>
   <div class="orders-content">
+    <!-- Toast Notification -->
+    <div 
+      v-if="showToast" 
+      class="notification is-success toast-notification"
+      :class="{ 'is-showing': showToast }"
+    >
+      <button class="delete" @click="showToast = false"></button>
+      {{ toastMessage }}
+    </div>
+
     <div v-if="isLoading" class="has-text-centered py-6">
       <span class="icon is-large">
         <i class="fas fa-spinner fa-pulse fa-2x"></i>
       </span>
     </div>
     
-    <div v-else-if="!orders.length" class="has-text-centered py-6">
+    <div v-else-if="!safeOrders.length" class="has-text-centered py-6">
       <span class="icon is-large has-text-grey">
         <i class="fas fa-shopping-bag fa-3x"></i>
       </span>
@@ -15,7 +25,7 @@
     </div>
 
     <div v-else class="orders-list">
-      <div v-for="order in orders" :key="order.id" class="card mb-4">
+      <div v-for="order in safeOrders" :key="order.id" class="card mb-4">
         <header class="card-header">
           <p class="card-header-title">
             Đơn hàng #{{ order.id }}
@@ -73,28 +83,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import type { Order } from '~/types'
-
-const props = defineProps<{
-  orders: Order[]
+import { useOrderStore  } from '~/stores/orderStore'
+interface OrderProps {
+  orders: Order[] | null
   isLoading: boolean
-}>()
+}
+
+const props = withDefaults(defineProps<OrderProps>(), {
+  orders: () => [],
+  isLoading: false
+})
 
 const emit = defineEmits<{
   (e: 'cancel-order', orderId: number): void
 }>()
 
+// Toast state
+const showToast = ref(false)
+const toastMessage = ref('')
+
 // Track cancelling state for each order
 const cancellingOrders = reactive<Record<number, boolean>>({})
 
-// Handle order cancellation with loading state
+// Computed property for safe orders access
+const safeOrders = computed(() => {
+  return Array.isArray(props.orders) ? props.orders : []
+})
+
+// Handle order cancellation with loading state and toast
 const handleCancelOrder = async (orderId: number) => {
   if (cancellingOrders[orderId]) return // Prevent double-clicks
   
   cancellingOrders[orderId] = true
   try {
     await emit('cancel-order', orderId)
+    // Show success toast
+    toastMessage.value = 'Đã hủy đơn hàng thành công!'
+    showToast.value = true
+    // Auto hide toast after 3 seconds
+    setTimeout(() => {
+      showToast.value = false
+    }, 3000)
   } finally {
     cancellingOrders[orderId] = false
   }
@@ -133,6 +164,53 @@ const getStatusText = (status: string) => {
   }
   return statusTexts[status as keyof typeof statusTexts] || status
 }
+
+// In the script setup section
+const authStore = useAuthStore();
+const userData = ref<UserData | null>(null)
+const useOrder = useOrderStore(); // Import the store
+
+// Initialize user data
+onMounted(() => {
+  try {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      userData.value = JSON.parse(storedUser)
+    }
+  } catch (error) {
+    console.error('Error parsing user data:', error)
+  }
+})
+
+// Loading state for orders
+const isLoadingOrders = ref(false)
+
+// When loading orders
+async function loadOrders() {
+  if (!userData.value?.id) {
+    console.error('User ID is undefined')
+    return
+  }
+
+  try {
+    isLoadingOrders.value = true
+    
+    const result = await useOrder.getOrders(userData.value.id)
+    if (!result.success) {
+      console.error('Failed to load orders:', result.error)
+    }
+    
+    console.log('Orders loaded:', result)
+  } catch (error) {
+    console.error('Order loading error:', error)
+  } finally {
+    isLoadingOrders.value = false
+  }
+}
+
+onMounted(() => {
+  loadOrders()
+})
 </script>
 
 <style scoped>
@@ -223,4 +301,24 @@ const getStatusText = (status: string) => {
     transform: translate(-50%, -50%) rotate(360deg);
   }
 }
-</style> 
+
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  min-width: 250px;
+  transform: translateX(120%);
+  transition: transform 0.3s ease-in-out;
+}
+
+.toast-notification.is-showing {
+  transform: translateX(0);
+}
+
+.toast-notification .delete {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+}
+</style>

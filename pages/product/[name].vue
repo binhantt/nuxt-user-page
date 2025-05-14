@@ -52,18 +52,66 @@
 
                 <div class="price-box">
                   <p class="price has-text-primary">{{ formatPrice(product.price) }}</p>
+                  
+                  <!-- Quantity Selector -->
+                  <div class="quantity-selector mt-4">
+                    <label class="label">Số lượng:</label>
+                    <div class="field has-addons">
+                      <p class="control">
+                        <button 
+                          class="button is-primary"
+                          @click="decreaseQuantity"
+                          :disabled="quantity <= 1 || product.stock <= 0 || product.is_active !== 1"
+                        >
+                          <span class="icon">
+                            <i class="fas fa-minus"></i>
+                          </span>
+                        </button>
+                      </p>
+                      <p class="control">
+                        <input
+                          class="input has-text-centered"
+                          type="number"
+                          v-model.number="quantity"
+                          :min="1"
+                          :max="product.stock"
+                          :disabled="product.stock <= 0 || product.is_active !== 1"
+                        >
+                      </p>
+                      <p class="control">
+                        <button 
+                          class="button is-primary"
+                          @click="increaseQuantity"
+                          :disabled="quantity >= product.stock || product.stock <= 0 || product.is_active !== 1"
+                        >
+                          <span class="icon">
+                            <i class="fas fa-plus"></i>
+                          </span>
+                        </button>
+                      </p>
+                    </div>
+                    <p v-if="product.stock > 0" class="help">Còn {{ product.stock }} sản phẩm</p>
+                  </div>
+
+                  <div class="total-price mt-4" v-if="quantity > 0">
+                    <div class="level">
+                      <div class="level-left">
+                        <strong>Tổng tiền:</strong>
+                      </div>
+                      <div class="level-right">
+                        <span class="has-text-primary has-text-weight-bold is-size-4">
+                          {{ formatPrice(product.price * quantity) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="stock-info mt-3">
                     <span class="tag is-medium" :class="product.stock > 0 ? 'is-primary is-light' : 'is-warning is-light'">
                       <span class="icon">
                         <i class="fas" :class="product.stock > 0 ? 'fa-check-circle' : 'fa-times-circle'"></i>
                       </span>
                       <span>{{ product.stock > 0 ? 'Còn hàng' : 'Hết hàng' }}</span>
-                    </span>
-                    <span class="tag is-primary is-light is-medium ml-2" v-if="product.stock > 0">
-                      <span class="icon">
-                        <i class="fas fa-box"></i>
-                      </span>
-                      <span>Còn {{ product.stock }} sản phẩm</span>
                     </span>
                     <span 
                       class="tag is-medium ml-2" 
@@ -325,6 +373,7 @@ const authStore = useAuthStore()
 const isLoading = ref(false)
 const isUpdating = ref(false)
 const selectedImage = ref(null)
+const quantity = ref(1)
 
 // Check if user is admin
 const isAdmin = computed(() => {
@@ -398,14 +447,6 @@ const handleBuyProduct = async () => {
     }
 
     const user = JSON.parse(userData)
-    
-    // Check if user account is active
-    if (user.is_active !== 1) {
-      alert('Tài khoản của bạn đã bị khóa. Không thể thực hiện giao dịch.')
-      await navigateTo('/account/login')
-      return
-    }
-
     if (!user.address) {
       alert('Vui lòng cập nhật địa chỉ giao hàng trong trang cá nhân')
       await navigateTo(`/account/profile/${user.name}?tab=info`)
@@ -418,7 +459,7 @@ const handleBuyProduct = async () => {
       items: [
         {
           product_id: product.value.id,
-          quantity: 1,
+          quantity: quantity.value,
           price: product.value.price
         }
       ],
@@ -429,8 +470,12 @@ const handleBuyProduct = async () => {
     const result = await orderStore.createOrder(orderData)
 
     if (result.success) {
-      alert('Đặt hàng thành công!')
-      // Redirect to orders page with correct path
+      // Check cancel deadline immediately after order creation
+      if (result.data?.id) {
+        await orderStore.checkCancelEligibility(result.data.id)
+      }
+      
+      alert('Đặt hàng thành công! Bạn có thể hủy đơn hàng trong vòng 24 giờ.')
       await navigateTo(`/account/profile/${user.name}?tab=orders`)
     } else {
       alert(result.error || 'Có lỗi xảy ra khi đặt hàng')
@@ -527,6 +572,19 @@ watch(() => route.params.name, async (newName) => {
     }
   }
 })
+
+// Handle quantity changes
+const decreaseQuantity = () => {
+  if (quantity.value > 1) {
+    quantity.value--
+  }
+}
+
+const increaseQuantity = () => {
+  if (quantity.value < product.value.stock) {
+    quantity.value++
+  }
+}
 </script>
 
 <style scoped>
@@ -801,5 +859,45 @@ watch(() => route.params.name, async (newName) => {
     height: 3rem;
     font-size: 1rem;
   }
+}
+
+.quantity-selector {
+  max-width: 200px;
+}
+
+.quantity-selector .input {
+  width: 80px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 0;
+}
+
+.quantity-selector .button {
+  border-radius: 4px;
+}
+
+.quantity-selector .button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.quantity-selector .button:last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.quantity-selector input[type="number"]::-webkit-inner-spin-button,
+.quantity-selector input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quantity-selector input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.total-price {
+  padding-top: 1rem;
+  border-top: 1px solid #f5f5f5;
 }
 </style>
