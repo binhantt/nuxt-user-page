@@ -106,14 +106,28 @@ export const useCategoryStore = defineStore('category', () => {
       loading.value = false
     }
   }
-
+  const getCategoryByName = async (name: string) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetch(`${API_ENDPOINTS.categories}/${name}`)
+      if (!response.ok) throw new Error('Failed to fetch category')
+      return await response.json()
+    } catch (err) {
+      console.error('Error fetching category:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
   return {
     categories,
     loading,
     error,
+    getCategoryByName,
     fetchCategories,
     addCategory,
     updateCategory,
     deleteCategory
   }
-}) 
+})

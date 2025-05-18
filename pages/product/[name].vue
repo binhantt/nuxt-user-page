@@ -1,418 +1,122 @@
 <template>
-  <div class="product-detail">
-    <!-- Product Information Section -->
-    <section v-if="product" class="hero is-light">
-      <div class="hero-body">
-        <div class="container">
-          <div class="is-vcentered">
-            <div class="">
-              <div class="image-gallery">
-                <div class="columns">
-                  <!-- Main Image Column -->
-                  <div class="column" :class="{'is-8': product.images?.length > 0, 'is-12': !product.images?.length}">
-                    <figure class="image main-image">
-                      <img 
-                        :src="selectedImage ? selectedImage.image_url : product.main_image_url" 
-                        :alt="product.name"
-                      >
-                    </figure>
-                  </div>
-                  
-                  <!-- Sub Images Column -->
-                  <div v-if="product.images?.length" class="column is-4">
-                    <div class="sub-images-stack">
-                      <figure 
-                        v-for="image in product.images.slice(0, 3)" 
-                        :key="image.id" 
-                        class="image sub-image"
-                        :class="{ 'is-selected': selectedImage?.id === image.id }"
-                        @click="selectImage(image)"
-                      >
-                        <img :src="image.image_url" :alt="product.name">
-                      </figure>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Product Details -->
-            <div class="py-2">
-              <div class="product-info">
-                <h1 class="title is-2 has-text-primary">{{ product.name }}</h1>
-                <p v-if="product.description" class="subtitle is-4 has-text-grey">{{ product.description }}</p>
-                
-                <div v-if="product.category" class="tags are-medium mb-4">
-                  <span class="tag is-primary is-light">
-                    <span class="icon">
-                      <i class="fas fa-tag"></i>
-                    </span>
-                    <span>{{ product.category.name }}</span>
-                  </span>
-                </div>
-
-                <div class="price-box">
-                  <p class="price has-text-primary">{{ formatPrice(product.price) }}</p>
-                  
-                  <!-- Quantity Selector -->
-                  <div class="quantity-selector mt-4">
-                    <label class="label">Số lượng:</label>
-                    <div class="field has-addons">
-                      <p class="control">
-                        <button 
-                          class="button is-primary"
-                          @click="decreaseQuantity"
-                          :disabled="quantity <= 1 || product.stock <= 0 || product.is_active !== 1"
-                        >
-                          <span class="icon">
-                            <i class="fas fa-minus"></i>
-                          </span>
-                        </button>
-                      </p>
-                      <p class="control">
-                        <input
-                          class="input has-text-centered"
-                          type="number"
-                          v-model.number="quantity"
-                          :min="1"
-                          :max="product.stock"
-                          :disabled="product.stock <= 0 || product.is_active !== 1"
-                        >
-                      </p>
-                      <p class="control">
-                        <button 
-                          class="button is-primary"
-                          @click="increaseQuantity"
-                          :disabled="quantity >= product.stock || product.stock <= 0 || product.is_active !== 1"
-                        >
-                          <span class="icon">
-                            <i class="fas fa-plus"></i>
-                          </span>
-                        </button>
-                      </p>
-                    </div>
-                    <p v-if="product.stock > 0" class="help">Còn {{ product.stock }} sản phẩm</p>
-                  </div>
-
-                  <div class="total-price mt-4" v-if="quantity > 0">
-                    <div class="level">
-                      <div class="level-left">
-                        <strong>Tổng tiền:</strong>
-                      </div>
-                      <div class="level-right">
-                        <span class="has-text-primary has-text-weight-bold is-size-4">
-                          {{ formatPrice(product.price * quantity) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="stock-info mt-3">
-                    <span class="tag is-medium" :class="product.stock > 0 ? 'is-primary is-light' : 'is-warning is-light'">
-                      <span class="icon">
-                        <i class="fas" :class="product.stock > 0 ? 'fa-check-circle' : 'fa-times-circle'"></i>
-                      </span>
-                      <span>{{ product.stock > 0 ? 'Còn hàng' : 'Hết hàng' }}</span>
-                    </span>
-                    <span 
-                      class="tag is-medium ml-2" 
-                      :class="product.is_active === 1 ? 'is-success is-light' : 'is-danger is-light'"
-                    >
-                      <span class="icon">
-                        <i class="fas" :class="product.is_active === 1 ? 'fa-check' : 'fa-ban'"></i>
-                      </span>
-                      <span>{{ product.is_active === 1 ? 'Đang bán' : 'Ngừng bán' }}</span>
-                    </span>
-                  </div>
-
-                  <div class="buttons mt-5">
-                    <button 
-                      class="button is-warning is-large" 
-                      :disabled="product.stock <= 0 || product.is_active !== 1"
-                      :class="{'is-loading': isLoading}"
-                      @click="handleBuyProduct"
-                    >
-                      <span class="icon">
-                        <i class="fas fa-shopping-cart"></i>
-                      </span>
-                      <span>{{ 
-                        product.is_active !== 1 ? 'Ngừng bán' :
-                        product.stock > 0 ? 'Mua Ngay' : 'Hết Hàng' 
-                      }}</span>
-                    </button>
-
-                    <button 
-                      v-if="isAdmin"
-                      class="button is-large"
-                      :class="product.is_active === 1 ? 'is-danger' : 'is-success'"
-                      :disabled="isUpdating"
-                      @click="handleToggleProductStatus"
-                    >
-                      <span class="icon">
-                        <i class="fas" :class="product.is_active === 1 ? 'fa-ban' : 'fa-check'"></i>
-                      </span>
-                      <span>{{ product.is_active === 1 ? 'Ngừng bán' : 'Mở bán lại' }}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+  <div v-if="product" class="product-detail-container">
+    <div class="product-card">
+      <div class="product-images">
+        <img
+          :src="product.main_image_url || defaultImage"
+          :alt="product.product_name"
+          class="main-image"
+        />
+        <div class="thumbnails" v-if="uniqueImages.length">
+          <img
+            v-for="(img, idx) in uniqueImages"
+            :key="idx"
+            :src="img.image_url || defaultImage"
+            class="thumb"
+            :alt="product.product_name"
+          />
         </div>
       </div>
-    </section>
-
-    <!-- Product Details Section -->
-    <section v-if="product" class="section">
-      <div class="container">
-        <div class="columns">
-          <!-- Main Content -->
-          <div class="column is-8">
-            <div class="content">
-              <!-- Technical Specifications -->
-              <div v-if="product.details?.length" class="specs-section card">
-                <header class="card-header">
-                  <p class="card-header-title">
-                    <span class="icon-text">
-                      <span class="icon has-text-primary">
-                        <i class="fas fa-microchip"></i>
-                      </span>
-                      <span>Thông Số Kỹ Thuật</span>
-                    </span>
-                  </p>
-                </header>
-                <div class="card-content">
-                  <div class="specs-table">
-                    <div v-for="detail in product.details" :key="detail.id" class="spec-item">
-                      <strong>{{ detail.spec_name }}:</strong>
-                      <span>{{ detail.spec_value }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Warranty Information -->
-              <div v-if="product.warranties?.length" class="warranty-section card mt-6">
-                <header class="card-header">
-                  <p class="card-header-title">
-                    <span class="icon-text">
-                      <span class="icon has-text-primary">
-                        <i class="fas fa-shield-alt"></i>
-                      </span>
-                      <span>Thông Tin Bảo Hành</span>
-                    </span>
-                  </p>
-                </header>
-                <div class="card-content">
-                  <div class="warranty-info">
-                    <div v-for="warranty in product.warranties" :key="warranty.id" class="warranty-item">
-                      <div class="warranty-detail">
-                        <span class="icon has-text-primary">
-                          <i class="fas fa-check-circle"></i>
-                        </span>
-                        <div>
-                          <p v-if="warranty.warranty_period"><strong>Thời gian bảo hành:</strong> {{ warranty.warranty_period }} tháng</p>
-                          <p v-if="warranty.warranty_provider"><strong>Nhà cung cấp:</strong> {{ warranty.warranty_provider }}</p>
-                          <p v-if="warranty.warranty_conditions"><strong>Điều kiện:</strong> {{ warranty.warranty_conditions }}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Product Information -->
-              <div class="product-info-section card mt-6">
-                <header class="card-header">
-                  <p class="card-header-title">
-                    <span class="icon-text">
-                      <span class="icon has-text-warning">
-                        <i class="fas fa-info-circle"></i>
-                      </span>
-                      <span>Thông Tin Sản Phẩm</span>
-                    </span>
-                  </p>
-                </header>
-                <div class="card-content">
-                  <div class="columns is-multiline">
-                    <div v-if="product.sku" class="column is-6">
-                      <div class="info-item">
-                        <span class="icon has-text-grey">
-                          <i class="fas fa-barcode"></i>
-                        </span>
-                        <div>
-                          <strong>SKU:</strong>
-                          <p>{{ product.sku }}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div v-if="product.weight" class="column is-6">
-                      <div class="info-item">
-                        <span class="icon has-text-grey">
-                          <i class="fas fa-weight"></i>
-                        </span>
-                        <div>
-                          <strong>Trọng lượng:</strong>
-                          <p>{{ product.weight }}kg</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div v-if="product.dimensions" class="column is-6">
-                      <div class="info-item">
-                        <span class="icon has-text-grey">
-                          <i class="fas fa-ruler-combined"></i>
-                        </span>
-                        <div>
-                          <strong>Kích thước:</strong>
-                          <p>{{ product.dimensions }}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="column is-6">
-                      <div class="info-item">
-                        <span class="icon has-text-grey">
-                          <i class="fas fa-boxes"></i>
-                        </span>
-                        <div>
-                          <strong>Số lượng còn:</strong>
-                          <p>{{ product.stock }} sản phẩm</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sidebar -->
-          <div class="column is-4">
-            <div class="box support-box">
-              <h3 class="title is-4">
-                <span class="icon-text">
-                  <span class="icon has-text-primary">
-                    <i class="fas fa-headset"></i>
-                  </span>
-                  <span>Thông Tin Hỗ Trợ</span>
-                </span>
-              </h3>
-              
-              <div class="support-info">
-                <div class="support-item">
-                  <span class="icon has-text-primary">
-                    <i class="fas fa-headset"></i>
-                  </span>
-                  <div>
-                    <strong>Hỗ trợ kỹ thuật</strong>
-                    <p>24/7 qua email và chat</p>
-                  </div>
-                </div>
-
-                <div class="support-item">
-                  <span class="icon has-text-warning">
-                    <i class="fas fa-sync"></i>
-                  </span>
-                  <div>
-                    <strong>Bảo hành</strong>
-                    <p>Theo chính sách nhà sản xuất</p>
-                  </div>
-                </div>
-
-                <div class="support-item">
-                  <span class="icon has-text-primary">
-                    <i class="fas fa-shipping-fast"></i>
-                  </span>
-                  <div>
-                    <strong>Vận chuyển</strong>
-                    <p>Miễn phí nội thành</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div class="product-info">
+        <h1 class="title is-3">{{ product.product_name }}</h1>
+        <div class="price">{{ formatPrice(product.price) }}</div>
+        <div class="stock">Tồn kho: <b>{{ product.stock }}</b></div>
+        <div class="category">
+          <b>Danh mục:</b> {{ product.category_name }} ({{ product.parent_category_name }})
         </div>
-      </div>
-    </section>
-
-    <!-- Loading State -->
-    <div v-else-if="productStore.isLoading" class="section">
-      <div class="container has-text-centered">
-        <span class="icon is-large">
-          <i class="fas fa-spinner fa-pulse fa-3x"></i>
-        </span>
-        <p class="mt-4 is-size-5">Đang tải thông tin sản phẩm...</p>
+        <div class="manufacturer">
+          <b>Nhà sản xuất:</b> {{ product.manufacturer_name }} - {{ product.manufacturer_phone }}
+        </div>
+        <div class="manufacturer-address">
+          <b>Địa chỉ NSX:</b> {{ product.manufacturer_address }}
+        </div>
+        <div v-if="product.warranties && product.warranties.length">
+          <b>Bảo hành:</b>
+          <ul>
+            <li v-for="(w, idx) in product.warranties" :key="idx">
+              {{ w.warranty_period }} - {{ w.warranty_provider }} ({{ w.warranty_conditions }})
+            </li>
+          </ul>
+        </div>
+        <div class="field" style="max-width: 160px; margin-bottom: 12px;">
+          <label for="mainQuantity" style="font-weight:600;">Số lượng</label>
+          <input
+            id="mainQuantity"
+            v-model="orderQuantity"
+            type="number"
+            min="1"
+            :max="product.stock"
+            required
+            class="input"
+          />
+        </div>
+        <button class="button is-warning is-large order-btn" @click="orderProduct">
+          <span class="icon"><i class="fas fa-shopping-cart"></i></span>
+          <span>Đặt đơn hàng</span>
+        </button>
       </div>
     </div>
-
-    <!-- Not Found State -->
-    <div v-else class="section">
-      <div class="container">
-        <div class="notification is-danger">
-          <span class="icon-text">
-            <span class="icon">
-              <i class="fas fa-exclamation-triangle"></i>
-            </span>
-            <span>Không tìm thấy sản phẩm</span>
-          </span>
-        </div>
+    <div v-if="uniqueSpecs.length">
+      <h2 class="subtitle is-5">Thông số kỹ thuật</h2>
+      <ul>
+        <li v-for="(spec, idx) in uniqueSpecs" :key="idx">
+          <b>{{ spec.spec_name }}:</b> {{ spec.spec_value }}
+        </li>
+      </ul>
+    </div>
+    <!-- Modal Order Form -->
+    <div v-if="showOrderForm" class="modal-overlay" @click.self="showOrderForm = false">
+      <div class="modal-content">
+        <button class="modal-close" @click="showOrderForm = false">&times;</button>
+        <form @submit.prevent="submitOrderForm">
+          <h3 class="modal-title">Thông tin giao hàng</h3>
+          <div class="field">
+            <label>Họ tên</label>
+            <input v-model="orderName" required class="input" />
+          </div>
+          <div class="field">
+            <label>Số điện thoại</label>
+            <input v-model="orderPhone" required class="input" />
+          </div>
+          <div class="field">
+            <label>Địa chỉ giao hàng</label>
+            <input v-model="orderAddress" required class="input" />
+          </div>
+          <div class="field">
+            <label>Số lượng</label>
+            <input 
+              v-model="orderQuantity" 
+              type="number" 
+              min="1" 
+              :max="product.stock" 
+              required 
+              class="input"
+            />
+          </div>
+          <div class="modal-actions">
+            <button class="button is-warning" type="submit">Xác nhận đặt hàng</button>
+            <button class="button" type="button" @click="showOrderForm = false">Hủy</button>
+          </div>
+        </form>
       </div>
     </div>
+  </div>
+  <div v-else>
+    <p>Không tìm thấy sản phẩm.</p>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
 import { useProductStore } from '~/stores/productStore'
-import { useOrderStore } from '~/stores/orderStore'
-import { useAuthStore } from '~/stores/authStore'
-
+import { computed, onMounted, ref } from 'vue'
 const route = useRoute()
 const productStore = useProductStore()
-const orderStore = useOrderStore()
-const authStore = useAuthStore()
-const isLoading = ref(false)
-const isUpdating = ref(false)
-const selectedImage = ref(null)
-const quantity = ref(1)
-
-// Check if user is admin
-const isAdmin = computed(() => {
-  const userData = localStorage.getItem('user')
-  if (!userData) return false
-  const user = JSON.parse(userData)
-  return user.role === 'admin' // Adjust based on your role system
+const defaultImage = 'https://via.placeholder.com/350x350?text=No+Image'
+const products = computed(() => {
+  const data = productStore.products.data
+  return Array.isArray(data) ? data : []
 })
-
-// Get product data from store
-const product = computed(() => {
-  const products = productStore.getProducts.data
-  console.log('[Product Detail] Available products:', products?.length || 0)
-  console.log('[Product Detail] Current route:', { params: route.params })
-  
-  // Get product by URL-friendly name
-  const urlName = route.params.name || ''
-  console.log('[Product Detail] URL name:', urlName)
-  
-  // Find product by comparing URL-friendly names
-  const foundProduct = products.find(p => formatProductUrl(p.name) === urlName) || null
-  console.log('[Product Detail] Found product:', foundProduct ? foundProduct.name : 'Not found')
-  
-  return foundProduct
-})
-
-// Format product URL for SEO
-const formatProductUrl = (name) => {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-}
-
-// Format price to VND
+const product = computed(() => products.value[0] || null)
 const formatPrice = (price) => {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -421,483 +125,230 @@ const formatPrice = (price) => {
     maximumFractionDigits: 0
   }).format(price)
 }
-
-// Handle image selection
-const selectImage = (image) => {
-  selectedImage.value = image
-  console.log('[Product Detail] Selected image:', image.id)
-}
-
-// Handle buy product
-const handleBuyProduct = async () => {
-  if (!authStore.isLoggedIn) {
-    alert('Vui lòng đăng nhập để mua hàng')
-    await navigateTo('/account/login')
-    return
-  }
-
-  if (!product.value) return
-
-  isLoading.value = true
-  try {
-    // Get user data from localStorage
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      throw new Error('Không tìm thấy thông tin người dùng')
-    }
-
-    const user = JSON.parse(userData)
-    if (!user.address) {
-      alert('Vui lòng cập nhật địa chỉ giao hàng trong trang cá nhân')
-      await navigateTo(`/account/profile/${user.name}?tab=info`)
-      return
-    }
-
-    // Create order data
-    const orderData = {
-      user_id: user.id,
-      items: [
-        {
-          product_id: product.value.id,
-          quantity: quantity.value,
-          price: product.value.price
-        }
-      ],
-      shipping_address: user.address
-    }
-
-    console.log('[Product Detail] Creating order:', orderData)
-    const result = await orderStore.createOrder(orderData)
-
-    if (result.success) {
-      // Check cancel deadline immediately after order creation
-      if (result.data?.id) {
-        await orderStore.checkCancelEligibility(result.data.id)
-      }
-      
-      alert('Đặt hàng thành công! Bạn có thể hủy đơn hàng trong vòng 24 giờ.')
-      await navigateTo(`/account/profile/${user.name}?tab=orders`)
-    } else {
-      alert(result.error || 'Có lỗi xảy ra khi đặt hàng')
-    }
-  } catch (error) {
-    console.error('[Product Detail] Error creating order:', error)
-    alert('Có lỗi xảy ra khi đặt hàng')
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Handle product status toggle
-const handleToggleProductStatus = async () => {
-  if (!product.value?.id) return
-  
-  const action = product.value.is_active === 1 ? 'ngừng bán' : 'mở bán lại'
-  const confirmed = confirm(`Bạn có chắc chắn muốn ${action} sản phẩm này?`)
-  
-  if (!confirmed) return
-  
-  isUpdating.value = true
-  try {
-    const result = await productStore.toggleProductStatus(
-      product.value.id,
-      product.value.is_active
-    )
-    
-    if (result.success) {
-      // Update the local product data
-      product.value = {
-        ...product.value,
-        is_active: product.value.is_active === 1 ? 0 : 1
-      }
-      alert(`Đã ${action} sản phẩm thành công!`)
-    } else {
-      throw new Error(result.error)
-    }
-  } catch (error) {
-    console.error('[Product Detail] Error toggling product status:', error)
-    alert(`Không thể ${action} sản phẩm. Vui lòng thử lại.`)
-  } finally {
-    isUpdating.value = false
-  }
-}
-
-// Fetch products on component mount
-onMounted(async () => {
-  console.log('[Product Detail] Component mounted')
-  if (!productStore.getProducts.data.length) {
-    console.log('[Product Detail] No products in store, fetching data...')
-    isLoading.value = true
-    try {
-      const result = await productStore.fetchProducts()
-      console.log('[Product Detail] Fetch completed:', { 
-        success: !!result,
-        productsCount: result?.data?.length || 0 
-      })
-      
-      // If no product found after fetching, redirect to products page
-      if (!product.value) {
-        console.log('[Product Detail] Product not found after fetch, redirecting to products page')
-        navigateTo('/products')
-      }
-    } catch (error) {
-      console.error('[Product Detail] Error fetching products:', error.message)
-    } finally {
-      isLoading.value = false
-    }
+const orderProduct = () => {
+  if (!isLoggedIn.value) {
+    showOrderForm.value = true
   } else {
-    console.log('[Product Detail] Products already in store:', productStore.getProducts.data.length)
-  }
-})
-
-// Watch for route changes to refetch if needed
-watch(() => route.params.name, async (newName) => {
-  console.log('[Product Detail] Route changed:', { newName })
-  const decodedName = decodeURIComponent(newName || '')
-  console.log('[Product Detail] Decoded name:', decodedName)
-  
-  if (!product.value) {
-    console.log('[Product Detail] Product not found on route change, fetching data...')
-    isLoading.value = true
-    try {
-      await productStore.fetchProducts()
-      
-      // If still no product found, redirect to products page
-      if (!product.value) {
-        console.log('[Product Detail] Product still not found after fetch, redirecting to products page')
-        navigateTo('/products')
-      }
-    } finally {
-      isLoading.value = false
-    }
-  }
-})
-
-// Handle quantity changes
-const decreaseQuantity = () => {
-  if (quantity.value > 1) {
-    quantity.value--
+    alert('Bạn đã đặt đơn hàng thành công!')
   }
 }
+const uniqueSpecs = computed(() => {
+  if (!product.value || !product.value.product_details) return []
+  const seen = new Set()
+  return product.value.product_details.filter(spec => {
+    if (!spec.spec_name) return false
+    const key = `${spec.spec_name}:${spec.spec_value}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+})
+const uniqueImages = computed(() => {
+  if (!product.value || !product.value.product_images) return []
+  const seen = new Set()
+  return product.value.product_images.filter(img => {
+    if (!img.image_url) return false
+    if (seen.has(img.image_url)) return false
+    seen.add(img.image_url)
+    return true
+  })
+})
+const isLoggedIn = ref(false)
+const showOrderForm = ref(false)
+const orderName = ref('')
+const orderPhone = ref('')
+const orderAddress = ref('')
+// Add to existing refs
+const orderQuantity = ref(1)
 
-const increaseQuantity = () => {
-  if (quantity.value < product.value.stock) {
-    quantity.value++
-  }
+// Update submitOrderForm to include quantity
+const submitOrderForm = () => {
+  alert(
+    `Đặt hàng thành công!\nTên: ${orderName.value}\nSĐT: ${orderPhone.value}\nĐịa chỉ: ${orderAddress.value}\nSố lượng: ${orderQuantity.value}`
+  )
+  showOrderForm.value = false
+  orderName.value = ''
+  orderPhone.value = ''
+  orderAddress.value = ''
+  orderQuantity.value = 1
 }
+onMounted(async () => {
+  try {
+    const productName = route.params.name
+    await productStore.fetchProductsByCategory(productName)
+    isLoggedIn.value = !!localStorage.getItem('user')
+  } catch (error) {
+    console.error('Error loading product:', error)
+  }
+})
 </script>
 
 <style scoped>
-.product-detail {
-  min-height: 100vh;
-  background: #f5f5f5;
+.product-detail-container {
+  max-width: 900px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07), 0 1.5px 4px 0 rgba(0,0,0,0.03);
+  padding: 32px 24px;
 }
-
-.hero.is-light {
-  background: transparent;
-}
-
-.product-info {
-  padding: 2rem;
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 8px 16px rgba(50, 115, 220, 0.1);
-}
-
-.price-box {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #f5f5f5;
-}
-
-.price {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: #3273dc;
-  margin-bottom: 1rem;
-}
-
-.image-gallery {
-  position: relative;
-  background: white;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  box-shadow: 0 8px 16px rgba(50, 115, 220, 0.1);
-}
-
-.main-image {
-  border-radius: 0.5rem;
-  overflow: hidden;
-  height: 450px;
-}
-
-.main-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.3s ease;
-}
-
-.main-image:hover img {
-  transform: scale(1.05);
-}
-
-.sub-images-stack {
+.product-card {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  height: 450px;
-  overflow-y: auto;
+  gap: 32px;
+  flex-wrap: wrap;
 }
-
-.sub-image {
-  height: 140px;
-  cursor: pointer;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
+.product-images {
+  flex: 1 1 320px;
+  min-width: 280px;
 }
-
-.sub-image img {
+.main-image {
   width: 100%;
-  height: 100%;
+  max-width: 350px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #ccc;
+  background: #f5f5f5;
   object-fit: cover;
 }
-
-.sub-image:hover {
-  transform: translateX(-4px);
-  box-shadow: 4px 0 8px rgba(50, 115, 220, 0.2);
-}
-
-.sub-image.is-selected {
-  border-color: #3273dc;
-  box-shadow: 0 0 0 2px #3273dc;
-}
-
-/* Custom scrollbar for sub-images */
-.sub-images-stack::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sub-images-stack::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.sub-images-stack::-webkit-scrollbar-thumb {
-  background: #3273dc;
-  border-radius: 3px;
-}
-
-.sub-images-stack::-webkit-scrollbar-thumb:hover {
-  background: #2366d1;
-}
-
-.card {
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: 0 8px 16px rgba(50, 115, 220, 0.1);
-  transition: transform 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-4px);
-}
-
-.card-header {
-  background: #f5f5f5;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.card-header-title {
-  font-size: 1.25rem;
-}
-
-.specs-table {
-  margin: 1rem 0;
-}
-
-.spec-item {
+.thumbnails {
   display: flex;
-  padding: 1rem;
-  border-bottom: 1px solid #f5f5f5;
-  transition: background-color 0.2s ease;
+  gap: 10px;
+  margin-top: 10px;
 }
-
-.spec-item:hover {
-  background-color: #f5f5f5;
+.thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+  background: #f5f5f5;
 }
-
-.spec-item:last-child {
-  border-bottom: none;
+.thumb:hover {
+  box-shadow: 0 2px 8px #3273dc55;
 }
-
-.spec-item strong {
-  width: 200px;
+.product-info {
+  flex: 2 1 350px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.price {
+  color: #3273dc;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+.stock {
+  color: #48c774;
+  font-weight: 500;
+}
+.category, .manufacturer, .manufacturer-address {
+  color: #555;
+}
+.order-btn {
+  margin-top: 24px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #ffd70055;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.order-btn:hover {
+  background: #ffed4a;
+  box-shadow: 0 4px 16px #ffd70099;
+}
+.subtitle.is-5 {
+  margin-top: 32px;
   color: #3273dc;
 }
-
-.warranty-info {
-  padding: 1rem;
+.order-form {
+  max-width: 400px;
+  margin: 32px auto 0 auto;
+  background: #f8fafc;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #ccc;
+  padding: 24px 18px;
 }
-
-.warranty-item {
-  margin-bottom: 1.5rem;
+.order-form .field {
+  margin-bottom: 14px;
 }
-
-.warranty-detail {
-  display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f5f5f5;
-  border-radius: 0.5rem;
-  transition: transform 0.2s ease;
+.order-form label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
 }
-
-.warranty-detail:hover {
-  transform: translateY(-2px);
+.order-form .input {
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  padding: 8px 10px;
 }
-
-.info-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f5f5f5;
-  border-radius: 0.5rem;
-  transition: transform 0.2s ease;
-}
-
-.info-item:hover {
-  transform: translateY(-2px);
-}
-
-.support-box {
-  border-radius: 1rem;
-  box-shadow: 0 8px 16px rgba(50, 115, 220, 0.1);
-  background: white;
-}
-
-.support-info {
-  margin-top: 2rem;
-}
-
-.support-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: #f5f5f5;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  transition: all 0.3s ease;
-}
-
-.support-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(50, 115, 220, 0.1);
-}
-
-.support-item:last-child {
-  margin-bottom: 0;
-}
-
-.support-item .icon {
-  font-size: 1.5rem;
-}
-
-.button.is-warning {
-  background-color: #ffd700;
-  color: #363636;
-  transition: all 0.3s ease;
-  height: 3.5rem;
-  font-size: 1.25rem;
-}
-
-.button.is-warning:hover:not(:disabled) {
-  transform: translateY(-2px);
-  background-color: #ffed4a;
-  box-shadow: 0 4px 8px rgba(50, 115, 220, 0.2);
-}
-
-.button.is-warning:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.has-text-primary {
-  color: #3273dc !important;
-}
-
-.has-text-warning {
-  color: #ffd700 !important;
-}
-
-.tag.is-primary {
-  background-color: #3273dc;
-  color: white;
-}
-
-.tag.is-warning {
-  background-color: #ffd700;
-  color: #363636;
-}
-
-/* Responsive adjustments */
-@media screen and (max-width: 768px) {
-  .product-info,
-  .image-gallery {
-    margin-bottom: 2rem;
-  }
-
-  .price {
-    font-size: 2rem;
-  }
-
-  .button.is-warning {
-    height: 3rem;
-    font-size: 1rem;
+@media (max-width: 700px) {
+  .product-card {
+    flex-direction: column;
+    gap: 18px;
   }
 }
-
-.quantity-selector {
-  max-width: 200px;
+.modal-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s;
 }
-
-.quantity-selector .input {
-  width: 80px;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(50, 115, 220, 0.18);
+  padding: 32px 24px 24px 24px;
+  min-width: 340px;
+  max-width: 95vw;
+  position: relative;
+  animation: modalPop 0.25s;
+}
+@keyframes modalPop {
+  from { transform: scale(0.95) translateY(30px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.modal-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #3273dc;
+  margin-bottom: 18px;
   text-align: center;
-  font-weight: bold;
-  border-radius: 0;
 }
-
-.quantity-selector .button {
-  border-radius: 4px;
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
 }
-
-.quantity-selector .button:first-child {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+.modal-close:hover {
+  color: #3273dc;
 }
-
-.quantity-selector .button:last-child {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.quantity-selector input[type="number"]::-webkit-inner-spin-button,
-.quantity-selector input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.quantity-selector input[type="number"] {
-  -moz-appearance: textfield;
-}
-
-.total-price {
-  padding-top: 1rem;
-  border-top: 1px solid #f5f5f5;
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 18px;
 }
 </style>
+
+/* Add if needed for quantity input styling */
+.input[type="number"] {
+  max-width: 120px;
+}

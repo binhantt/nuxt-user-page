@@ -23,18 +23,22 @@
             <a class="navbar-link has-text-dark">
               Danh Mục
             </a>
-            <div class="navbar-dropdown">
-              <NuxtLink 
-                v-for="category in categories.data" 
-                :key="category.id"
-                :to="`/search/${category.name}`"
-                class="navbar-item has-text-dark"
-              >
-                <figure class="image is-24x24 mr-2" v-if="category.image">
-                  <img :src="category.image" :alt="category.name">
-                </figure>
-                <span>{{ category.name }}</span>
-              </NuxtLink>
+            <div class="navbar-dropdown" style="max-height: 70vh; overflow-y: auto;">
+              <template v-for="mainCategory in categories.data" :key="mainCategory.id">
+                <div class="navbar-item has-text-weight-bold">
+                  <img :src="mainCategory.image" alt="">
+                  {{ mainCategory.name }}
+                </div>
+                <NuxtLink
+                  v-for="subCategory in mainCategory.categories"
+                  :key="subCategory.id"
+                  :to="`/category/${subCategory.name}`"
+                  class="navbar-item has-text-dark"
+                >
+                  {{ subCategory.name }}
+                </NuxtLink>
+                <hr class="navbar-divider">
+              </template>
             </div>
           </div>
 
@@ -136,25 +140,25 @@ const categoryStore = useCategoryStore()
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const isLoading = ref(false)
-
 const { categories } = storeToRefs(categoryStore)
-
-// Get stored user data
 const storedUser = ref(null)
-
-// Function to get user data from localStorage and parse it
+const searchQuery = ref('')
+const handleSearch = () => {
+  if (searchQuery.value.trim()) {
+    navigateTo(`/search/${encodeURIComponent(searchQuery.value.trim())}`)
+  }
+}
 const initializeUserData = () => {
   try {
     const userData = localStorage.getItem('user')
     if (userData) {
       storedUser.value = JSON.parse(userData)
-      console.log('[Navbar] Stored user data:', storedUser.value)
+     
     }
   } catch (error) {
-    console.error('[Navbar] Error parsing stored user data:', error)
+  
   }
 }
-
 const handleLogout = async () => {
   try {
     isLoading.value = true
@@ -162,46 +166,42 @@ const handleLogout = async () => {
     userStore.clearProfile()
     localStorage.removeItem('user')
     storedUser.value = null
-    console.log('[Navbar] Logout successful')
+
     await navigateTo('/account/login')
   } catch (error) {
-    console.error('[Navbar] Logout error:', error)
+ 
   } finally {
     isLoading.value = false
   }
 }
-
 onMounted(async () => {
-  console.log('[Navbar] Component mounted')
-  await categoryStore.fetchCategories()
-  
-  // Initialize auth state and get user data
+  try {
+    if (!categories.value || !categories.value.data || !categories.value.data.length) {
+      await categoryStore.fetchCategories()
+    }
+    console.log('[Navbar] Categories fetched:', categories.value)
+  } catch (error) {
+    console.error('[Navbar] Error fetching categories:', error)
+  }
   authStore.initializeAuth()
   initializeUserData()
-  
-  // Log the current state
-  console.log('[Navbar] Auth state:', {
-    isLoggedIn: authStore.isLoggedIn,
-    storedUser: storedUser.value
-  })
 })
 
 // Watch for changes in localStorage and auth state
 watch(
   [() => localStorage.getItem('user'), () => authStore.isLoggedIn],
   ([newData, isLoggedIn]) => {
-    console.log('[Navbar] State change:', { newData: !!newData, isLoggedIn })
+  
     
     if (newData && isLoggedIn) {
       try {
         storedUser.value = JSON.parse(newData)
-        console.log('[Navbar] User data updated:', storedUser.value)
+     
       } catch (error) {
-        console.error('[Navbar] Error parsing user data:', error)
+      
       }
     } else {
       storedUser.value = null
-      console.log('[Navbar] User data cleared')
     }
   }
 )
@@ -306,4 +306,4 @@ watch(
     transform: translateY(0);
   }
 }
-</style> 
+</style>

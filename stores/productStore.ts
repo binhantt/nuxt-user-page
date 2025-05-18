@@ -59,7 +59,20 @@ export const useProductStore = defineStore('product', {
         this.loading = false
       }
     },
-
+    async fetchProductsByCategory(name: string) {
+      try {
+        const response = await fetch(`${API_ENDPOINTS.products.list}/${name}`)
+        if (!response.ok) {
+          throw new Error('Không thể tải danh sách sản phẩm')
+        }
+        const data = await response.json()
+        this.products = data
+        return data
+      } catch (error) {
+        console.error('Error fetching products:', error)
+        throw error
+      }
+    },
     // Get product by ID
     async getProductById(id: string | number) {
       this.loading = true
@@ -264,4 +277,4 @@ export const useProductStore = defineStore('product', {
       this.filters = {}
     }
   }
-}) 
+})

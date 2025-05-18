@@ -25,36 +25,15 @@
           <div v-for="category in searchStore.normalizedProducts" :key="category.category.id" class="category-section mb-6">
             <h2 class="title is-4 mb-4">{{ category.category.name }}</h2>
             
-            <div class="columns is-multiline">
-              <div v-for="product in category.products" :key="product.id" class="column is-3">
-                <div class="card product-card">
-                  <div class="card-image">
-                    <figure class="image is-4by3">
-                      <img 
-                        :src="product.main_image_url" 
-                        :alt="product.name"
-                        :class="{ 'is-zoomed': zoomedImage === product.id }"
-                        @click="toggleZoom(product.id)"
-                      >
-                      <button 
-                        class="zoom-button" 
-                        @click.stop="toggleZoom(product.id)"
-                      >
-                        <span class="icon">
-                          <i class="fas" :class="zoomedImage === product.id ? 'fa-search-minus' : 'fa-search-plus'"></i>
-                        </span>
-                      </button>
-                    </figure>
-                  </div>
-                  <div class="card-content">
-                    <p class="title is-5">{{ product.name }}</p>
-                    <p class="subtitle is-6">{{ formatPrice(product.price) }}đ</p>
-                  </div>
-                  <footer class="card-footer">
-                    <NuxtLink :to="'/product/' + formatProductUrl(product.name)" class="card-footer-item">
-                      Chi tiết
-                    </NuxtLink>
-                  </footer>
+            <div class="simple-product-list">
+              <div v-for="product in category.products" :key="product.id" class="simple-product-item">
+                <img :src="product.main_image_url" :alt="product.name" class="simple-product-img" />
+                <div class="simple-product-info">
+                  <div class="simple-product-name">{{ product.name }}</div>
+                  <div class="simple-product-price">{{ formatPrice(product.price) }}đ</div>
+                  <NuxtLink :to="'/product/' + formatProductUrl(product.name)" class="button is-small is-info mt-1">
+                    Xem chi tiết
+                  </NuxtLink>
                 </div>
               </div>
             </div>
@@ -213,5 +192,45 @@ onUnmounted(() => {
   .card-image img.is-zoomed {
     transform: scale(1.2);
   }
+}
+
+.simple-product-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.simple-product-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 180px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #eee;
+  padding: 16px 10px 14px 10px;
+  transition: box-shadow 0.2s;
+}
+.simple-product-item:hover {
+  box-shadow: 0 4px 16px #3273dc33;
+}
+.simple-product-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: #f5f5f5;
+}
+.simple-product-name {
+  font-weight: 600;
+  color: #3273dc;
+  margin-bottom: 4px;
+  text-align: center;
+}
+.simple-product-price {
+  color: #e67e22;
+  font-weight: 500;
+  margin-bottom: 8px;
+  text-align: center;
 }
 </style> 
