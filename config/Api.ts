@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3001/api'
+ export const BASE_URL = 'http://localhost:3001/api'
 
 export const API_ENDPOINTS = {
   // Auth endpoints
@@ -40,7 +40,7 @@ export const API_ENDPOINTS = {
   orders: {
     create: `${BASE_URL}/users/order/creact`,
     list: (userId: number) => `${BASE_URL}/users/${userId}/orders`,
-    detail: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
+     detail: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
     update: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
     cancel: (id: string | number) => `${BASE_URL}/users/orders/${id}`,
     cancelDeadline: (id: string | number) => `${BASE_URL}/users/orders/${id}`,

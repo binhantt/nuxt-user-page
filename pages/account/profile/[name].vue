@@ -167,7 +167,7 @@ watch(() => authStore.getUserData, (newData) => {
 
 // Watch localStorage for changes
 watch(
-  () => localStorage.getItem('user'),
+  () => localStorage.getItem('user_data'),
   (newData) => {
     if (newData) {
       try {
@@ -276,7 +276,6 @@ const loadOrders = async () => {
     const result = await orderStore.getOrders()
     if (result?.success && result.data) {
       orders.value = Array.isArray(result.data) ? result.data : []
-      console.log('[Profile] Orders loaded:', orders.value.length)
     }
   } catch (error) {
     console.error('[Profile] Error loading orders:', error)

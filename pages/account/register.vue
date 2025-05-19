@@ -182,7 +182,7 @@
               <div class="has-text-centered mt-5">
                 <p>
                   Đã có tài khoản?
-                  <NuxtLink to="/login" class="has-text-primary">Đăng nhập</NuxtLink>
+                  <NuxtLink to="/account/login" class="has-text-primary">Đăng nhập</NuxtLink>
                 </p>
               </div>
             </form>

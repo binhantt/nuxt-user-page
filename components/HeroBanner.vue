@@ -80,16 +80,16 @@ const SwiperPagination = Pagination
 
 const productIntroStore = useProductIntroStore()
 const productIntros = computed(() => {
-  console.log('[HeroBanner] Current productIntros:', productIntroStore.productIntros)
+  
   return productIntroStore.productIntros
 })
 
 onMounted(async () => {
-  console.log('[HeroBanner] Component mounted')
+
   if (!productIntros.value.length) {
-    console.log('[HeroBanner] No intros found, fetching...')
+ 
     await productIntroStore.fetchProductIntros()
-    console.log('[HeroBanner] Fetch completed, productIntros:', productIntros.value)
+
   }
 })
 </script>

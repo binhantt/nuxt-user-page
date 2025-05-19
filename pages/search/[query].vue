@@ -1,236 +1,105 @@
 <template>
-  <div class="section search-results">
+  <div class="section">
     <div class="container">
-      <!-- Loading State -->
-      <div v-if="searchStore.loading" class="has-text-centered py-6">
-        <span class="icon is-large">
-          <i class="fas fa-spinner fa-pulse fa-3x"></i>
-        </span>
-      </div>
-
-      <!-- Error State -->
-      <div v-else-if="searchStore.error" class="notification is-danger">
-        {{ searchStore.error }}
-      </div>
-
-      <!-- Search Results -->
-      <div v-else>
-        <!-- Search Query -->
-        <div class="search-header mb-6">
-          <h1 class="title is-3">Kết quả tìm kiếm cho "{{ searchQuery }}"</h1>
-        </div>
-
-        <!-- Results by Category -->
-        <div v-if="searchStore.hasResults" class="search-categories">
-          <div v-for="category in searchStore.normalizedProducts" :key="category.category.id" class="category-section mb-6">
-            <h2 class="title is-4 mb-4">{{ category.category.name }}</h2>
-            
-            <div class="simple-product-list">
-              <div v-for="product in category.products" :key="product.id" class="simple-product-item">
-                <img :src="product.main_image_url" :alt="product.name" class="simple-product-img" />
-                <div class="simple-product-info">
-                  <div class="simple-product-name">{{ product.name }}</div>
-                  <div class="simple-product-price">{{ formatPrice(product.price) }}đ</div>
-                  <NuxtLink :to="'/product/' + formatProductUrl(product.name)" class="button is-small is-info mt-1">
-                    Xem chi tiết
-                  </NuxtLink>
-                </div>
+      <h2 class="title is-4 mb-5">Kết quả tìm kiếm cho "{{ route.params.query }}"</h2>
+      <div class="columns is-multiline">
+        <div
+          v-for="product in categories"
+          :key="product.product_id"
+          class="column is-12-mobile is-6-tablet is-4-desktop"
+        >
+          <router-link :to="`/product/${product.product_name}`" class="card product-card" :class="{ 'inactive': product.is_active == 0 }">
+            <div class="card-image has-text-centered pt-4">
+              <figure class="image is-4by3">
+                <img
+                  :src="product.main_image_url"
+                  :alt="product.product_name"
+                  class="product-img"
+                  @error="e => e.target.src = 'https://via.placeholder.com/300x200?text=No+Image'"
+                />
+              </figure>
+              <span v-if="product.is_active == 0" class="tag is-danger badge-bulma">Ngừng bán</span>
+              <span v-else-if="product.stock === 0" class="tag is-dark badge-bulma">Hết hàng</span>
+            </div>
+            <div class="card-content p-4">
+              <div class="media-content has-text-centered">
+                <p class="title is-6 mb-1">{{ product.product_name }}</p>
+                <p class="subtitle is-7 mb-2">Mã SP: <b>{{ product.sku }}</b></p>
+                <p class="has-text-weight-bold has-text-link mb-1">{{ formatPrice(product.price) }}</p>
+                <p class="mb-1" :class="{'has-text-danger': product.stock === 0, 'has-text-success': product.stock > 0}">
+                  Tồn kho: <b>{{ product.stock }}</b>
+                </p>
               </div>
             </div>
-          </div>
+          </router-link>
         </div>
-
-        <!-- No Results -->
-        <div v-else class="has-text-centered py-6">
-          <p class="is-size-4">Không tìm thấy sản phẩm phù hợp</p>
-          <NuxtLink to="/" class="button is-primary mt-4">
-            Quay lại trang chủ
-          </NuxtLink>
+        <div v-if="!categories.length" class="has-text-centered is-size-5 py-6">
+          Không tìm thấy sản phẩm phù hợp
         </div>
       </div>
     </div>
   </div>
 </template>
-
 <script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useSearchStore } from '~/stores/searchStore'
-
+import { storeToRefs } from 'pinia'
 const route = useRoute()
 const searchStore = useSearchStore()
-const searchQuery = computed(() => route.params.query || '')
-const zoomedImage = ref(null)
-
-// Toggle zoom on image
-const toggleZoom = (productId) => {
-  zoomedImage.value = zoomedImage.value === productId ? null : productId
-}
-
-// Format price
-const formatPrice = (price) => {
-  return new Intl.NumberFormat('vi-VN').format(price)
-}
-
-// Format product URL
-const formatProductUrl = (name) => {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-}
-
-// Fetch results when query changes
-watch(() => route.params.query, async (newQuery) => {
-  if (newQuery) {
-    await searchStore.searchProducts(newQuery)
-  }
-}, { immediate: true })
-
-// Clean up when component unmounts
-onUnmounted(() => {
-  searchStore.resetState()
+const { categories } = storeToRefs(searchStore)
+onMounted(async () => {
+  await searchStore.searchProducts(route.params.query)
 })
+const formatPrice = (price) => {
+  const numericPrice = parseFloat(price)
+  if (isNaN(numericPrice)) return '—'
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(numericPrice)
+}
 </script>
-
 <style scoped>
-.search-results {
-  background-color: #f8f9fa;
-  min-height: 100vh;
-  padding: 2rem;
-}
-
 .product-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease;
-}
-
-.product-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.card-content {
-  flex-grow: 1;
-}
-
-.card-image {
-  position: relative;
-  overflow: hidden;
-}
-
-.card-image figure {
-  padding: 1rem;
-  margin: 0;
-  transition: all 0.3s ease;
-}
-
-.card-image img {
-  object-fit: contain;
-  transition: transform 0.3s ease;
-  cursor: zoom-in;
-}
-
-.card-image img.is-zoomed {
-  transform: scale(1.5);
-  cursor: zoom-out;
-}
-
-.zoom-button {
-  position: absolute;
-  bottom: 1rem;
-  right: 1rem;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 2;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.zoom-button:hover {
-  background: white;
-  transform: scale(1.1);
-}
-
-.zoom-button .icon {
-  color: #3273dc;
-  font-size: 1rem;
-}
-
-/* Hover effect for product card */
-.product-card:hover .zoom-button {
-  opacity: 1;
-}
-
-/* Responsive adjustments */
-@media screen and (max-width: 768px) {
-  .column.is-3 {
-    width: 50%;
-  }
-  
-  .card-image img.is-zoomed {
-    transform: scale(1.3);
-  }
-}
-
-@media screen and (max-width: 480px) {
-  .column.is-3 {
-    width: 100%;
-  }
-  
-  .card-image img.is-zoomed {
-    transform: scale(1.2);
-  }
-}
-
-.simple-product-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-}
-.simple-product-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 180px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(50,115,220,0.10);
+  transition: box-shadow 0.22s, transform 0.22s;
+  border: 1.5px solid #f2f2f2;
   background: #fff;
+  margin-bottom: 24px;
+  height: 100%;
+  display: block;
+  text-decoration: none;
+}
+.product-card:hover {
+  box-shadow: 0 8px 36px rgba(50,115,220,0.18);
+  transform: translateY(-6px) scale(1.04);
+  border-color: #3273dc33;
+}
+.product-card.inactive {
+  opacity: 0.7;
+  filter: grayscale(0.2);
+}
+.badge-bulma {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 1em;
+  font-weight: 700;
   border-radius: 10px;
-  box-shadow: 0 2px 8px #eee;
-  padding: 16px 10px 14px 10px;
-  transition: box-shadow 0.2s;
+  z-index: 2;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px #ff386055;
+  padding: 6px 18px;
 }
-.simple-product-item:hover {
-  box-shadow: 0 4px 16px #3273dc33;
-}
-.simple-product-img {
-  width: 100px;
-  height: 100px;
+.product-img {
   object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 10px;
+  width: 100%;
+  height: 200px;
+  border-radius: 18px;
   background: #f5f5f5;
-}
-.simple-product-name {
-  font-weight: 600;
-  color: #3273dc;
-  margin-bottom: 4px;
-  text-align: center;
-}
-.simple-product-price {
-  color: #e67e22;
-  font-weight: 500;
-  margin-bottom: 8px;
-  text-align: center;
 }
 </style> 

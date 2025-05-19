@@ -83,34 +83,14 @@ export const useSearchStore = defineStore('search', {
       console.log('[SearchStore] Starting search with query:', query)
       this.loading = true
       this.error = null
-      
       try {
-        const url = `${API_ENDPOINTS.products.search}?name=${encodeURIComponent(query || '')}`
-        console.log('[SearchStore] Fetching from URL:', url)
-        
+        const url = `${API_ENDPOINTS.products.list}/${encodeURIComponent(query || '')}`
         const response = await fetch(url)
         const data = await response.json()
-        console.log('[SearchStore] Raw API Response:', data)
-        
-        if (data.success && data.data) {
-          // Ensure we have a valid array of categories
-          this.categories = Array.isArray(data.data) ? data.data.map((category: Category) => ({
-            ...category,
-            products: Array.isArray(category?.products) ? category.products : []
-          })) : []
-          
-          console.log('[SearchStore] Processed categories:', this.categories)
-        } else {
-          console.log('[SearchStore] API returned error or invalid data:', data)
-          throw new Error(data.message || 'Có lỗi xảy ra khi tìm kiếm')
-        }
+        this.categories = data.data
+        this.loading = false
       } catch (error) {
         console.error('[SearchStore] Search error:', error)
-        this.error = error instanceof Error ? error.message : 'Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại sau.'
-        this.categories = []
-      } finally {
-        this.loading = false
-        console.log('[SearchStore] Search completed. Loading:', this.loading, 'Error:', this.error)
       }
     },
 

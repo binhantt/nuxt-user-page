@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { API_ENDPOINTS } from '~/config/Api'
+import { API_ENDPOINTS ,BASE_URL } from '~/config/Api'
 import type { Product, ProductState } from '~/types/product'
 
 export const useProductStore = defineStore('product', {
@@ -28,6 +28,16 @@ export const useProductStore = defineStore('product', {
   },
 
   actions: {
+    async getProduct() {
+      try {
+        const response = await fetch(BASE_URL+'/users/products/category/1')
+        const data = await response.json()
+        console.log('data', data)
+        this.products = data.data
+      } catch (error) {
+        console.error('[ProductStore] Error fetching products:', error)
+      }
+    },
     // Fetch products with pagination and filters
     async fetchProducts(page: number = 1, filters = {}) {
       this.loading = true

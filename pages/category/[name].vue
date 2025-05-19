@@ -31,7 +31,7 @@
                     class="image is-square"
                   >
                   <NuxtLink 
-                    :to="`/product/${formatProductUrl(product.name)}`" 
+                    :to="`/product/${product.name}`" 
                     class="button is-warning is-rounded mt-3 is-fullwidth"
                   >
                     <span class="icon">
@@ -44,7 +44,7 @@
                 <div class="product-content">
                   <h3 class="title is-5 mb-2">
                     <NuxtLink 
-                      :to="`/product/${formatProductUrl(product.name)}`" 
+                      :to="`/product/${product.name}`" 
                       class="has-text-dark"
                     >
                       {{ product.name }}

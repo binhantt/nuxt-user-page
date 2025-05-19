@@ -3,7 +3,9 @@ export default defineNuxtRouteMiddleware((to, from) => {
     throw createError({
       statusCode: 404,
       message: 'Trang không tồn tại',
-      fatal: true
+      fatal: true,
+      statusMessage: 'Not Found',
+      statusText: 'Not Found'
     })
   }
 }) 

@@ -96,10 +96,10 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logout() {
-      console.log('[AuthStore] Starting logout process')
+ 
       try {
         if (this.token) {
-          console.log('[AuthStore] Sending logout request to server')
+   
           await fetch(API_ENDPOINTS.auth.logout, {
             method: 'POST',
             headers: {
@@ -116,9 +116,10 @@ export const useAuthStore = defineStore('auth', {
         this.expiresIn = null
         this.isAuthenticated = false
         this.userData = null
+        localStorage.removeItem('user')
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
-        localStorage.removeItem('user')
+        localStorage.removeItem('user_data')
         console.log('[AuthStore] Logout complete')
       }
     },

@@ -19,19 +19,16 @@ export const useProductIntroStore = defineStore('productIntro', () => {
     error.value = null
     
     try {
-      console.log('[ProductIntroStore] Fetching product intros...')
+    
       const response = await fetch(API_ENDPOINTS.productIntro.list)
       if (!response.ok) {
         throw new Error('Failed to fetch product introductions')
       }
       
       const result: ProductIntroResponse = await response.json()
-      console.log('[ProductIntroStore] API Response:', result)
-
       if (result.success && result.data) {
         productIntros.value = result.data.items
         pagination.value = result.data.pagination
-        console.log('[ProductIntroStore] Updated productIntros:', productIntros.value)
       } else {
         throw new Error('Invalid response format')
       }

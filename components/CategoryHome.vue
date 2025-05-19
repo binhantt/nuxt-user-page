@@ -4,11 +4,9 @@
       <h2 class="title is-2 has-text-centered mb-6">Danh Mục</h2>
       <div class="tabs is-centered mb-5">
         <ul>
-          <li :class="{ 'is-active': activeCategory === 'all' }">
-            <a @click="setCategory('all')">Tất Cả</a>
-          </li>
+         
           <li v-for="mainCategory in categories" :key="mainCategory.id" :class="{ 'is-active': activeCategory === mainCategory.id }">
-            <a @click="setCategory(mainCategory.id)">{{ mainCategory.name   }}</a>
+            <a @click="setCategory(mainCategory.id)">{{ mainCategory.name }}</a>
           </li>
         </ul>
       </div>
@@ -18,12 +16,12 @@
         </span>
       </div>
       <div v-else class="columns is-multiline">
-        <div v-for="mainCategory in filteredCategories" :key="mainCategory.id" class="column is-12">
+        <div v-if="selectedCategory" class="column is-12">
           <div class="category-group">
-            <h3 class="category-title">{{ mainCategory.name }}  </h3>
-            <div v-if="mainCategory.categories && mainCategory.categories.length" class="subcategory-grid">
+            <h3 class="category-title">{{ selectedCategory.name }}</h3>
+            <div v-if="selectedCategory.categories && selectedCategory.categories.length" class="subcategory-grid">
               <NuxtLink
-                v-for="subCategory in mainCategory.categories"
+                v-for="subCategory in selectedCategory.categories"
                 :key="subCategory.id"
                 :to="`/category/${subCategory.name}`"
                 class="subcategory-card"
@@ -52,9 +50,11 @@ const isLoading = ref(false)
 const activeCategory = ref('all')
 const categories = computed(() => categoryStore.categories?.data || [])
 
-const filteredCategories = computed(() => {
-  if (activeCategory.value === 'all') return categories.value
-  return categories.value.filter(cat => cat.id === activeCategory.value)
+const selectedCategory = computed(() => {
+  if (activeCategory.value === 'all') {
+    return categories.value[0] || null
+  }
+  return categories.value.find(cat => cat.id === activeCategory.value) || null
 })
 
 const setCategory = (id) => {

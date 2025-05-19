@@ -172,14 +172,7 @@ const useOrder = useOrderStore(); // Import the store
 
 // Initialize user data
 onMounted(() => {
-  try {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      userData.value = JSON.parse(storedUser)
-    }
-  } catch (error) {
-    console.error('Error parsing user data:', error)
-  }
+
 })
 
 // Loading state for orders
@@ -187,20 +180,15 @@ const isLoadingOrders = ref(false)
 
 // When loading orders
 async function loadOrders() {
-  if (!userData.value?.id) {
-    console.error('User ID is undefined')
-    return
-  }
-
+  const data = localStorage.getItem('user')
+  const userData = JSON.parse(data)
+  console.log(userData)
   try {
-    isLoadingOrders.value = true
-    
-    const result = await useOrder.getOrders(userData.value.id)
-    if (!result.success) {
-      console.error('Failed to load orders:', result.error)
+    if(userData.id){
+     const result = await useOrder.getOrders(userData.id)
+    }else{
+      const result = await useOrder.getOrders(0)
     }
-    
-    console.log('Orders loaded:', result)
   } catch (error) {
     console.error('Order loading error:', error)
   } finally {
